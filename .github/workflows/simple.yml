@@ -1,0 +1,17 @@
+name: Simple GitHub Action
+
+on:
+  push:
+    branches:
+      - main  # or master, depending on your repo
+
+jobs:
+  say-hello:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Print Hello World
+        run: echo "Hello, World! 👋 from GitHub Actions"
