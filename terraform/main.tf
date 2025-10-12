@@ -15,39 +15,34 @@ provider "aws" {
   secret_key = var.aws_secret_key
 }
 
-# VPC
-resource "aws_vpc" "lotus_lms_platform_vpc" {
-  cidr_block           = "10.0.0.0/16"
-  enable_dns_support   = true
-  enable_dns_hostnames = true
-  tags = {
-    Name = "lotus-lms-platform-vpc"
-    Project = "lotus-lms-platform"
-  }
+variable "aws_region" {
+  description = "AWS region"
+  default     = "us-east-1"
 }
 
-# Public Subnet
-resource "aws_subnet" "lotus_lms_platform_public_subnet" {
-  vpc_id                  = aws_vpc.lotus_lms_platform_vpc.id
-  cidr_block              = "10.0.1.0/24"
-  map_public_ip_on_launch = true
-  availability_zone       = "${var.aws_region}a"
-
-  tags = {
-    Name    = "lotus-lms-platform-public-subnet"
-    Project = "lotus-lms-platform"
-  }
+variable "aws_access_key" {
+  description = "AWS Access Key"
+  sensitive   = true
 }
 
-# Private Subnet
-resource "aws_subnet" "lotus_lms_platform_private_subnet" {
-  vpc_id                  = aws_vpc.lotus_lms_platform_vpc.id
-  cidr_block              = "10.0.2.0/24"
-  map_public_ip_on_launch = false
-  availability_zone       = "${var.aws_region}b"
+variable "aws_secret_key" {
+  description = "AWS Secret Key"
+  sensitive   = true
+}
 
-  tags = {
-    Name    = "lotus-lms-platform-private-subnet"
-    Project = "lotus-lms-platform"
-  }
+# VPC Module
+module "vpc" {
+  source         = "./vpc"
+  aws_region     = var.aws_region
+  aws_access_key = var.aws_access_key
+  aws_secret_key = var.aws_secret_key
+}
+
+# EC2 Module
+module "ec2" {
+  source       = "./ec2"
+  ami_id       = "ami-02d26659fd82cf299"   # Example Amazon Linux 2 AMI (us-east-1)
+  instance_type = "t2.micro"
+  subnet_id    = module.vpc.public_subnet_id
+  key_name     = "ansible-key"
 }
