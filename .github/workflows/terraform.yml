@@ -37,6 +37,11 @@ jobs:
         working-directory: ./terraform
         run: terraform plan -var "aws_access_key=$AWS_ACCESS_KEY_ID" -var "aws_secret_key=$AWS_SECRET_ACCESS_KEY" -var "aws_region=$AWS_REGION"
 
+      - name: Terraform Apply (Manual Only)
+        if: github.event_name == 'workflow_dispatch'
+        working-directory: terraform
+        run: terraform apply -auto-approve -input=false -var "aws_access_key=$AWS_ACCESS_KEY_ID" -var "aws_secret_key=$AWS_SECRET_ACCESS_KEY" -var "aws_region=$AWS_REGION"
+
       # Optional: To automatically apply (use with caution)
       # - name: Terraform Apply
       #   working-directory: ./terraform
