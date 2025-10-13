@@ -41,7 +41,6 @@ variable "aws_secret_key" {
 # EC2 Key Pair Module
 module "ec2_key" {
   source   = "./ec2_key"
-  key_name = "lotus-lms-platform-key"
 }
 
 # VPC Module
