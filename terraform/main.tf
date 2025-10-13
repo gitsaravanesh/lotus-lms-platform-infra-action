@@ -1,4 +1,12 @@
 terraform {
+  backend "s3" {
+    bucket         = "lotus-lms-terraform-state"
+    key            = "env/dev/terraform.tfstate"
+    region         = "ap-south-1"
+    dynamodb_table = "lotus-lms-terraform-locks"
+    encrypt        = true
+  }
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -30,6 +38,12 @@ variable "aws_secret_key" {
   sensitive   = true
 }
 
+# EC2 Key Pair Module
+module "ec2_key" {
+  source   = "./ec2_key"
+  key_name = "lotus-lms-platform-key"
+}
+
 # VPC Module
 module "vpc" {
   source         = "./vpc"
@@ -44,5 +58,5 @@ module "ec2" {
   ami_id       = "ami-02d26659fd82cf299"   # Example Amazon Linux 2 AMI (us-east-1)
   instance_type = "t2.micro"
   subnet_id    = module.vpc.public_subnet_id
-  key_name     = "ansible-key"
+  key_name      = module.ec2_key.key_name
 }
