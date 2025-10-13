@@ -53,10 +53,10 @@ module "vpc" {
 }
 
 # EC2 Module
-module "ec2" {
-  source       = "./ec2"
-  ami_id       = "ami-02d26659fd82cf299"   # Example Amazon Linux 2 AMI (us-east-1)
-  instance_type = "t2.micro"
-  subnet_id    = module.vpc.public_subnet_id
-  key_name      = module.ec2_key.key_name
-}
+#module "ec2" {
+#  source       = "./ec2"
+#  ami_id       = "ami-02d26659fd82cf299"   # Example Amazon Linux 2 AMI (us-east-1)
+#  instance_type = "t2.micro"
+#  subnet_id    = module.vpc.public_subnet_id
+#  key_name      = module.ec2_key.key_name
+#}
