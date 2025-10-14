@@ -1,12 +1,12 @@
 # EC2 Key Pair Module
 module "ec2_key" {
-  source = "../modules/ec2_key"
+  source = "./modules/ec2_key"
   key_name = "lotus-lms-platform-key"
 }
 
 # VPC Module
 module "vpc" {
-  source         = "../modules/vpc"
+  source         = "./modules/vpc"
   aws_region     = var.aws_region
   aws_access_key = var.aws_access_key
   aws_secret_key = var.aws_secret_key
@@ -22,7 +22,7 @@ module "vpc" {
 #}
 
 module "cognito" {
-  source = "../modules/cognito"
+  source = "./modules/cognito"
 
   user_pool_name        = "lms-userpool-dev"
   cognito_domain_prefix = "lms-auth-dev-sarav"   # must be globally unique
