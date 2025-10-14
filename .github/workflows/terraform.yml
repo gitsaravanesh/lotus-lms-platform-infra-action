@@ -31,14 +31,14 @@ jobs:
           terraform_version: 1.9.5
 
       - name: Terraform Init
-        run: terraform init envs/dev
+        run: terraform -chdir=envs/dev init
 
       - name: Terraform Validate
-        run: terraform validate envs/dev
+        run: terraform -chdir=envs/dev validate
 
       - name: Terraform Plan
-        run: terraform plan -chdir=envs/dev -out=tfplan
+        run: terraform -chdir=envs/dev plan -out=tfplan
 
       - name: Terraform Apply (Manual Trigger Only)
         if: github.event_name == 'workflow_dispatch'
-        run: terraform apply -chdir=envs/dev -auto-approve tfplan
+        run: terraform -chdir=envs/dev apply -auto-approve tfplan
