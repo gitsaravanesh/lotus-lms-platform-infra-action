@@ -1,6 +1,6 @@
 # EC2 Key Pair Module
 module "ec2_key" {
-  source   = "../modules/ec2_key"
+  source   = ".../modules/ec2_key"
   key_name = "lotus-lms-platform-key"
 }
 
