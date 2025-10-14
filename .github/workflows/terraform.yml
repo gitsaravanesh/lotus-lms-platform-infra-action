@@ -34,7 +34,7 @@ jobs:
         run: terraform validate
 
       - name: Terraform Plan
-        working-directory: ./terraform/emvs/dev
+        working-directory: ./terraform/envs/dev
         run: terraform plan -var "aws_access_key=$AWS_ACCESS_KEY_ID" -var "aws_secret_key=$AWS_SECRET_ACCESS_KEY" -var "aws_region=$AWS_REGION"
 
       - name: Terraform Apply (Manual Only)
