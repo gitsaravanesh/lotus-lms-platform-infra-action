@@ -13,3 +13,14 @@ variable "google_client_secret" {
 type = string
 sensitive = true
 }
+
+variable "environment" {
+  description = "Environment name (e.g. dev, prod)"
+  type        = string
+  default     = "dev"
+}
+
+variable "acm_certificate_arn" {
+  description = "ARN of ACM certificate (must be in us-east-1)"
+  type        = string
+}
