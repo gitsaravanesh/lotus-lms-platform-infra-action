@@ -21,14 +21,13 @@ resource "aws_cognito_user_pool" "this" {
     mfa_configuration = "OFF"
 }
 
-
 resource "aws_cognito_user_pool_client" "this" {
     name = "${var.user_pool_name}-client"
     user_pool_id = aws_cognito_user_pool.this.id
     explicit_auth_flows = ["ALLOW_USER_PASSWORD_AUTH","ALLOW_USER_SRP_AUTH","ALLOW_REFRESH_TOKEN_AUTH"]
     prevent_user_existence_errors = "ENABLED"
     generate_secret = false
-    supported_identity_providers = concat(["COGNITO"], var.enabled_identity_providers)
+    supported_identity_providers = ["Google"]
     allowed_oauth_flows = ["code"]
     allowed_oauth_scopes = ["openid", "email", "profile"]
     allowed_oauth_flows_user_pool_client = true
