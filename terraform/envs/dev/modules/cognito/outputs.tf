@@ -14,5 +14,5 @@ value = aws_cognito_user_pool_client.this.id
 
 
 output "cognito_domain" {
-value = aws_cognito_user_pool_domain.this.cloudfront_domain
+value = aws_cognito_user_pool_domain.this.domain
 }
