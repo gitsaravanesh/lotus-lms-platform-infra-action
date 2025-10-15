@@ -34,6 +34,8 @@ resource "aws_cognito_user_pool_client" "this" {
     callback_urls = var.callback_urls
     logout_urls = var.logout_urls
     refresh_token_validity = 30
+    
+    depends_on = [aws_cognito_user_pool_client.this]
 }
 
 
@@ -62,6 +64,4 @@ resource "aws_cognito_identity_provider" "google" {
     client_secret = var.google_client_secret
     authorize_scopes = "openid email profile"
     }
-
-    depends_on = [aws_cognito_user_pool_client.this]
 }
