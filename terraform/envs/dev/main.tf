@@ -38,3 +38,18 @@ module "cognito" {
 
   enabled_identity_providers = ["Google"]
 }
+
+module "s3" {
+  source = "../modules/s3"
+
+  bucket_name = "lms-frontend-dev-${random_id.suffix.hex}"
+  environment = "dev"
+
+  providers = {
+    aws = aws
+  }
+}
+
+resource "random_id" "suffix" {
+  byte_length = 4
+}

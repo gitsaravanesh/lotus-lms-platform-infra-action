@@ -9,3 +9,10 @@ output "cognito_client_id" {
 output "cognito_domain" {
     value = module.cognito.cognito_domain
 }
+output "frontend_bucket_name" {
+  value = module.s3.bucket_name
+}
+
+output "frontend_website_url" {
+  value = module.s3.website_endpoint
+}
