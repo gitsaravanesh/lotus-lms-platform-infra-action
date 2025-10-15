@@ -40,7 +40,7 @@ module "cognito" {
 }
 
 module "s3" {
-  source = "../modules/s3"
+  source = "./modules/s3"
 
   bucket_name = "lms-frontend-dev-${random_id.suffix.hex}"
   environment = "dev"
