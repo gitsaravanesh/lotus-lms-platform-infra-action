@@ -37,7 +37,7 @@ jobs:
         run: terraform -chdir=envs/dev validate
 
       - name: Terraform Plan
-        run: terraform -chdir=envs/dev plan -out=tfplan
+        run: terraform -chdir=envs/dev plan -no-color -input=false -out=tfplan
 
       - name: Terraform Apply (Manual Trigger Only)
         if: github.event_name == 'workflow_dispatch'
