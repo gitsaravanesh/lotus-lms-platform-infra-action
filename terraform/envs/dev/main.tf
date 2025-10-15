@@ -54,15 +54,9 @@ resource "random_id" "suffix" {
   byte_length = 4
 }
 
-module "s3_frontend" {
-  source      = "./modules/s3"
-  bucket_name = "lms-frontend-dev-sarav"
-  environment = var.environment
-}
-
 module "cloudfront" {
   source              = "./modules/cloudfront"
-  bucket_name         = module.s3_frontend.bucket_name
+  bucket_name         = module.s3.bucket_name
   domain_name         = "app.blackgardentech.in"     # or dev subdomain
   environment         = var.environment
   acm_certificate_arn = var.acm_certificate_arn
