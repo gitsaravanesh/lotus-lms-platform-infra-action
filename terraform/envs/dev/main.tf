@@ -8,8 +8,6 @@ module "ec2_key" {
 module "vpc" {
   source         = "./modules/vpc"
   aws_region     = var.aws_region
-  aws_access_key = var.aws_access_key
-  aws_secret_key = var.aws_secret_key
 }
 
 # EC2 Module
