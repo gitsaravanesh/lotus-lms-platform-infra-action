@@ -1,30 +1,31 @@
-resource "aws_cloudfront_origin_access_identity" "this" {
-  comment = "Access identity for ${var.bucket_name}"
-}
+######################################
+# CloudFront Distribution
+######################################
 
 data "aws_s3_bucket" "frontend" {
   bucket = var.bucket_name
 }
 
-resource "aws_cloudfront_distribution" "this" {
+resource "aws_cloudfront_distribution" "frontend" {
   enabled             = true
   is_ipv6_enabled     = true
-  comment             = "CloudFront distribution for ${var.domain_name}"
+  comment             = "CloudFront distribution for ${var.bucket_name}"
   default_root_object = "index.html"
 
-  aliases = [var.domain_name]
-
   origin {
-    domain_name = data.aws_s3_bucket.frontend.bucket_regional_domain_name
-    origin_id   = "s3-${var.bucket_name}"
+    domain_name = "${var.bucket_name}.s3-website-${var.region}.amazonaws.com"
+    origin_id   = "s3-static-site-origin"
 
-    s3_origin_config {
-      origin_access_identity = aws_cloudfront_origin_access_identity.this.cloudfront_access_identity_path
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "http-only" # static website endpoint only supports HTTP
+      origin_ssl_protocols   = ["TLSv1.2"]
     }
   }
 
   default_cache_behavior {
-    target_origin_id       = "s3-${var.bucket_name}"
+    target_origin_id       = "s3-static-site-origin"
     viewer_protocol_policy = "redirect-to-https"
     allowed_methods        = ["GET", "HEAD"]
     cached_methods         = ["GET", "HEAD"]
@@ -39,16 +40,14 @@ resource "aws_cloudfront_distribution" "this" {
 
   price_class = "PriceClass_100"
 
+  viewer_certificate {
+    cloudfront_default_certificate = true # ✅ AWS-managed HTTPS cert
+  }
+
   restrictions {
     geo_restriction {
       restriction_type = "none"
     }
-  }
-
-  viewer_certificate {
-    acm_certificate_arn = var.acm_certificate_arn
-    ssl_support_method  = "sni-only"
-    minimum_protocol_version = "TLSv1.2_2021"
   }
 
   tags = {

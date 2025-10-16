@@ -1,5 +1,4 @@
 aws_region          = "ap-south-1"
 google_client_id     = "1064406935309-k24tsablg630qnv0rlj8j7pdjha09vmu.apps.googleusercontent.com"
 google_client_secret = "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"
-acm_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/abcd1234-ab12-cd34-ef56-abcdef123456"
 environment         = "dev"

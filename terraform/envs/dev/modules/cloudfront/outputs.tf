@@ -1,9 +1,9 @@
 output "cloudfront_distribution_domain" {
-  description = "The domain name of the CloudFront distribution"
-  value       = aws_cloudfront_distribution.this.domain_name
+  description = "CloudFront domain name (public HTTPS URL)"
+  value       = aws_cloudfront_distribution.frontend.domain_name
 }
 
 output "cloudfront_distribution_id" {
-  description = "The ID of the CloudFront distribution"
-  value       = aws_cloudfront_distribution.this.id
+  description = "CloudFront distribution ID (for cache invalidation)"
+  value       = aws_cloudfront_distribution.frontend.id
 }

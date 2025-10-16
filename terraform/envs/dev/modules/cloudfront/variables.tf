@@ -1,19 +1,16 @@
 variable "bucket_name" {
-  description = "Name of the S3 bucket hosting the frontend"
+  description = "Existing S3 bucket name with static website hosting enabled"
   type        = string
 }
 
-variable "domain_name" {
-  description = "Custom domain name for the CloudFront distribution"
+variable "region" {
+  description = "AWS region where the S3 bucket exists"
   type        = string
-}
-
-variable "acm_certificate_arn" {
-  description = "ARN of the ACM certificate (must be in us-east-1)"
-  type        = string
+  default     = "ap-south-1"
 }
 
 variable "environment" {
-  description = "Environment name (e.g. dev, prod)"
+  description = "Environment name (e.g., dev, prod)"
   type        = string
+  default     = "dev"
 }

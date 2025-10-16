@@ -54,14 +54,10 @@ resource "random_id" "suffix" {
   byte_length = 4
 }
 
-module "cloudfront" {
-  source              = "./modules/cloudfront"
-  bucket_name         = module.s3.bucket_name
-  domain_name         = "app.blackgardentech.in"     # or dev subdomain
-  environment         = var.environment
-  acm_certificate_arn = var.acm_certificate_arn
-}
 
-output "cloudfront_url" {
-  value = module.cloudfront.cloudfront_distribution_domain
+module "cloudfront" {
+  source      = "./modules/cloudfront"
+  bucket_name = module.s3.bucket_name
+  region      = var.region
+  environment = var.environment
 }
