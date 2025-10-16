@@ -24,3 +24,9 @@ variable "acm_certificate_arn" {
   description = "ARN of ACM certificate (must be in us-east-1)"
   type        = string
 }
+
+variable "region" {
+  description = "AWS region where the S3 bucket exists"
+  type        = string
+  default     = "ap-south-1"
+}
