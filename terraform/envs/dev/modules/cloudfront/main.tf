@@ -13,7 +13,7 @@ resource "aws_cloudfront_distribution" "frontend" {
   default_root_object = "index.html"
 
   origin {
-    domain_name = "http://${var.bucket_name}.s3-website-${var.region}.amazonaws.com"
+    domain_name = "${var.bucket_name}.s3-website-${var.region}.amazonaws.com"
     origin_id   = "s3-static-site-origin"
 
     custom_origin_config {
