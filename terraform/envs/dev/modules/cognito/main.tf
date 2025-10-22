@@ -5,11 +5,9 @@
 resource "aws_cognito_user_pool" "this" {
   name = var.user_pool_name
 
-  # Automatically verify user emails
   auto_verified_attributes = ["email"]
   username_attributes      = ["email"]
 
-  # Password policy
   password_policy {
     minimum_length    = 8
     require_lowercase = true
@@ -25,21 +23,20 @@ resource "aws_cognito_user_pool" "this" {
   mfa_configuration = "OFF"
 
   ##########################################
-  # 🧩 Custom Attribute Definition
+  # 🧩 Custom Attribute Definition (Fixed Syntax)
   ##########################################
-  schema = [
-    {
-      name                     = "interest"
-      attribute_data_type      = "String"
-      mutable                  = true
-      required                 = false
-      developer_only_attribute = false
-      string_attribute_constraints {
-        min_length = 1
-        max_length = 100
-      }
+  schema {
+    name                     = "interest"
+    attribute_data_type      = "String"
+    mutable                  = true
+    required                 = false
+    developer_only_attribute = false
+
+    string_attribute_constraints {
+      min_length = "1"
+      max_length = "100"
     }
-  ]
+  }
 }
 
 ##########################################
