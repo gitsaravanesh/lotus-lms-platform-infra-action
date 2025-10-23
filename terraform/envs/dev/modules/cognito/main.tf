@@ -18,10 +18,6 @@ resource "aws_cognito_user_pool" "this" {
     email_message_by_link  = "Hi {username},<br><br>Click the link below to verify your account:<br><br>{##Verify Email##}<br><br>Thanks,<br>Lotus LMS Team"
   }
 
-  # (Optional) Customize subject/message for fallback (older clients)
-  email_verification_subject = "Verify your Lotus LMS account"
-  email_verification_message = "Click this link to verify your email: {##Verify Email##}"
-
   ##########################################
   # Password Policy
   ##########################################
