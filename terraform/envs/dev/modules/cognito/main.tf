@@ -5,9 +5,10 @@
 resource "aws_cognito_user_pool" "this" {
   name = var.user_pool_name
 
-  # Automatically verify users' emails
+  # Verify email but require username
   auto_verified_attributes = ["email"]
-  username_attributes      = ["email"]
+  # Remove username_attributes to make username mandatory
+  # username_attributes      = ["email"]  
 
   ##########################################
   # ✅ Use Email Link Verification (instead of OTP)
@@ -15,8 +16,11 @@ resource "aws_cognito_user_pool" "this" {
   verification_message_template {
     default_email_option   = "CONFIRM_WITH_LINK"
     email_subject          = "Verify your Lotus LMS account"
-    email_message_by_link  = "Hi {username},<br><br>Click the link below to verify your account:<br><br>{##Verify Email##}<br><br>Thanks,<br>Lotus LMS Team"
+    email_message_by_link  = "Hi,<br><br>Click the link below to verify your account:<br><br>{##Verify Email##}<br><br>Thanks,<br>Lotus LMS Team"
   }
+
+  # Add alias attributes to allow login with either username or email
+  alias_attributes = ["email"]
 
   ##########################################
   # Password Policy
@@ -39,8 +43,21 @@ resource "aws_cognito_user_pool" "this" {
   mfa_configuration = "OFF"
 
   ##########################################
-  # 🧩 Custom Attribute Definition
+  # Schema Configuration
   ##########################################
+  schema {
+    name                     = "email"
+    attribute_data_type      = "String"
+    mutable                  = true
+    required                 = true  # Make email required
+    developer_only_attribute = false
+
+    string_attribute_constraints {
+      min_length = "3"
+      max_length = "255"
+    }
+  }
+
   schema {
     name                     = "interest"
     attribute_data_type      = "String"
