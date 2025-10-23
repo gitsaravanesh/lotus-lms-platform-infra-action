@@ -5,9 +5,26 @@
 resource "aws_cognito_user_pool" "this" {
   name = var.user_pool_name
 
+  # Automatically verify users' emails
   auto_verified_attributes = ["email"]
   username_attributes      = ["email"]
 
+  ##########################################
+  # ✅ Use Email Link Verification (instead of OTP)
+  ##########################################
+  verification_message_template {
+    default_email_option   = "CONFIRM_WITH_LINK"
+    email_subject          = "Verify your Lotus LMS account"
+    email_message_by_link  = "Hi {username},<br><br>Click the link below to verify your account:<br><br>{##Verify Email##}<br><br>Thanks,<br>Lotus LMS Team"
+  }
+
+  # (Optional) Customize subject/message for fallback (older clients)
+  email_verification_subject = "Verify your Lotus LMS account"
+  email_verification_message = "Click this link to verify your email: {##Verify Email##}"
+
+  ##########################################
+  # Password Policy
+  ##########################################
   password_policy {
     minimum_length    = 8
     require_lowercase = true
@@ -16,6 +33,9 @@ resource "aws_cognito_user_pool" "this" {
     require_symbols   = false
   }
 
+  ##########################################
+  # Allow users to self-register
+  ##########################################
   admin_create_user_config {
     allow_admin_create_user_only = false
   }
@@ -23,7 +43,7 @@ resource "aws_cognito_user_pool" "this" {
   mfa_configuration = "OFF"
 
   ##########################################
-  # 🧩 Custom Attribute Definition (Fixed Syntax)
+  # 🧩 Custom Attribute Definition
   ##########################################
   schema {
     name                     = "interest"
@@ -36,6 +56,13 @@ resource "aws_cognito_user_pool" "this" {
       min_length = "1"
       max_length = "100"
     }
+  }
+
+  ##########################################
+  # 📧 Email Configuration (using Cognito’s default email service)
+  ##########################################
+  email_configuration {
+    email_sending_account = "COGNITO_DEFAULT"
   }
 }
 
@@ -100,10 +127,14 @@ resource "aws_cognito_user_pool_client" "this" {
 
   prevent_user_existence_errors = "ENABLED"
   generate_secret               = false
-  supported_identity_providers  = ["Google"]
+  supported_identity_providers  = ["COGNITO", "Google"]
+
+  ##########################################
+  # ✅ Keep "code" flow for OAuth 2.0
+  ##########################################
   allowed_oauth_flows           = ["code"]
-  allowed_oauth_scopes          = ["openid", "email", "profile"]
   allowed_oauth_flows_user_pool_client = true
+  allowed_oauth_scopes          = ["openid", "email", "profile"]
 
   callback_urls = var.callback_urls
   logout_urls   = var.logout_urls
