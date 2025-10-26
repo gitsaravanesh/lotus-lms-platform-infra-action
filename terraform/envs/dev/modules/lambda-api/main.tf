@@ -114,8 +114,8 @@ resource "aws_lambda_function" "list_courses" {
   timeout       = var.lambda_timeout
   memory_size   = var.lambda_memory
 
-  s3_bucket = var.lambda_s3_bucket
-  s3_key    = var.lambda_s3_key
+  s3_bucket = aws_s3_bucket.lambda_artifacts.bucket
+s3_key    = "list_courses.zip"
 
   environment {
     variables = {
