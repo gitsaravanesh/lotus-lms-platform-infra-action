@@ -6,7 +6,7 @@ locals {
 # S3 BUCKET FOR LAMBDA CODE ARTIFACTS
 #############################################
 resource "aws_s3_bucket" "lambda_artifacts" {
-  bucket = "${local.name_prefix}-lambda-artifacts"
+  bucket        = "${local.name_prefix}-lambda-artifacts"
   force_destroy = true
 
   tags = {
@@ -36,10 +36,10 @@ resource "aws_s3_bucket_public_access_block" "lambda_artifacts_access" {
 # DynamoDB Table
 # -------------------------
 resource "aws_dynamodb_table" "courses" {
-  name           = var.courses_table_name
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "tenant_id"
-  range_key      = "course_id"
+  name         = var.courses_table_name
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "tenant_id"
+  range_key    = "course_id"
 
   attribute {
     name = "tenant_id"
@@ -98,6 +98,13 @@ resource "aws_iam_role_policy" "lambda_policy" {
           "logs:PutLogEvents"
         ]
         Resource = "arn:aws:logs:*:*:*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject"
+        ]
+        Resource = "${aws_s3_bucket.lambda_artifacts.arn}/*"
       }
     ]
   })
@@ -114,14 +121,23 @@ resource "aws_lambda_function" "list_courses" {
   timeout       = var.lambda_timeout
   memory_size   = var.lambda_memory
 
+  # ✅ Use the S3 bucket created above
   s3_bucket = aws_s3_bucket.lambda_artifacts.bucket
-s3_key    = "list_courses.zip"
+
+  # 👇 Example of dynamic key name (update as needed)
+  # You can upload your code as `list_courses.zip` into the same bucket
+  s3_key = "lambda/list_courses.zip"
 
   environment {
     variables = {
       COURSES_TABLE = aws_dynamodb_table.courses.name
     }
   }
+
+  depends_on = [
+    aws_iam_role_policy.lambda_policy,
+    aws_s3_bucket.lambda_artifacts
+  ]
 }
 
 # -------------------------

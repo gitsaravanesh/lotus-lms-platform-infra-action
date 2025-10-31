@@ -63,5 +63,5 @@ module "cloudfront" {
 }
 
 module "lambda-api" {
-    source      = "./modules/lambda-api"
+  source      = "./modules/lambda-api"
 }
