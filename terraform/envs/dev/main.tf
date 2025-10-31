@@ -62,6 +62,6 @@ module "cloudfront" {
   environment = var.environment
 }
 
-module "lambda-api" {
+module "lambda" {
   source      = "./modules/lambda-api"
 }

@@ -32,13 +32,3 @@ variable "courses_table_name" {
   type    = string
   default = "lms-courses"
 }
-
-variable "lambda_s3_bucket" {
-  description = "S3 bucket where Lambda zip is stored"
-  type        = string
-}
-
-variable "lambda_s3_key" {
-  description = "S3 key for Lambda zip"
-  type        = string
-}
