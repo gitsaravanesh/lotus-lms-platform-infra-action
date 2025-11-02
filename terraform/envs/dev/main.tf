@@ -26,11 +26,11 @@ module "cognito" {
   cognito_domain_prefix = "lms-auth-dev-sarav"   # must be globally unique
 
   callback_urls = [
-    "https://dodyqytcfhwoe.cloudfront.net",
+    "https://dodyqytcfhwoe.cloudfront.net/",
   ]
 
   logout_urls = [
-    "https://dodyqytcfhwoe.cloudfront.net",
+    "https://dodyqytcfhwoe.cloudfront.net/",
   ]
 
   google_client_id     = var.google_client_id
