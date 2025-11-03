@@ -1,5 +1,6 @@
 output "api_endpoint" {
-  value = aws_apigatewayv2_api.http_api.api_endpoint
+  description = "Base URL of the deployed REST API"
+  value       = "https://${aws_api_gateway_rest_api.lms_api.id}.execute-api.${var.aws_region}.amazonaws.com/prod"
 }
 
 output "lambda_function_name" {
