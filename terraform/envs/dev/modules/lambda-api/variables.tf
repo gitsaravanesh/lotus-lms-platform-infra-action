@@ -32,3 +32,8 @@ variable "courses_table_name" {
   type    = string
   default = "lms-courses"
 }
+
+variable "stage_name" {
+  type    = string
+  default = "dev"
+}
