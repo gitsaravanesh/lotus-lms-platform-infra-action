@@ -141,71 +141,145 @@ resource "aws_lambda_function" "list_courses" {
 }
 
 # -------------------------
-# API Gateway v2 HTTP API
+# API Gateway v1 (REST)
 # -------------------------
-resource "aws_apigatewayv2_api" "http_api" {
-  name          = "${local.name_prefix}-api"
-  protocol_type = "HTTP"
-
-  cors_configuration {
-    allow_origins  = ["*"]
-    allow_methods  = ["GET", "OPTIONS"]
-    allow_headers  = ["content-type", "x-tenant-id", "authorization"]
-    expose_headers = ["content-type"]
-    max_age        = 3600
+resource "aws_api_gateway_rest_api" "lms_api" {
+  name        = "${local.name_prefix}-rest-api"
+  description = "LMS Platform REST API for listing and retrieving courses"
+  endpoint_configuration {
+    types = ["REGIONAL"]
   }
 }
 
-# Lambda integration
-resource "aws_apigatewayv2_integration" "lambda_integration" {
-  api_id                 = aws_apigatewayv2_api.http_api.id
-  integration_type       = "AWS_PROXY"
-  integration_uri        = aws_lambda_function.list_courses.invoke_arn
-  payload_format_version = "2.0"
+# Root /courses resource
+resource "aws_api_gateway_resource" "courses" {
+  rest_api_id = aws_api_gateway_rest_api.lms_api.id
+  parent_id   = aws_api_gateway_rest_api.lms_api.root_resource_id
+  path_part   = "courses"
 }
 
-# Routes
-resource "aws_apigatewayv2_route" "get_courses" {
-  api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = "GET /courses"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
+# /courses/{course_id} resource
+resource "aws_api_gateway_resource" "course_by_id" {
+  rest_api_id = aws_api_gateway_rest_api.lms_api.id
+  parent_id   = aws_api_gateway_resource.courses.id
+  path_part   = "{course_id}"
 }
 
-resource "aws_apigatewayv2_route" "get_course_by_id" {
-  api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = "GET /courses/{course_id}"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
+# -------------------------
+# Lambda Integration
+# -------------------------
+resource "aws_api_gateway_integration" "courses_integration" {
+  rest_api_id = aws_api_gateway_rest_api.lms_api.id
+  resource_id = aws_api_gateway_resource.courses.id
+  http_method = aws_api_gateway_method.get_courses.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.list_courses.invoke_arn
 }
 
-# ✅ Add OPTIONS route for CORS preflight
-resource "aws_apigatewayv2_route" "options_courses" {
-  api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = "OPTIONS /courses"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
+resource "aws_api_gateway_integration" "course_by_id_integration" {
+  rest_api_id = aws_api_gateway_rest_api.lms_api.id
+  resource_id = aws_api_gateway_resource.course_by_id.id
+  http_method = aws_api_gateway_method.get_course_by_id.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.list_courses.invoke_arn
 }
 
-resource "aws_apigatewayv2_route" "options_course_by_id" {
-  api_id    = aws_apigatewayv2_api.http_api.id
-  route_key = "OPTIONS /courses/{course_id}"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda_integration.id}"
+# -------------------------
+# Methods
+# -------------------------
+# GET /courses
+resource "aws_api_gateway_method" "get_courses" {
+  rest_api_id   = aws_api_gateway_rest_api.lms_api.id
+  resource_id   = aws_api_gateway_resource.courses.id
+  http_method   = "GET"
+  authorization = "NONE"
 }
 
-# Stage (default auto deploy)
-resource "aws_apigatewayv2_stage" "default" {
-  api_id      = aws_apigatewayv2_api.http_api.id
-  name        = "$default"
-  auto_deploy = true
+# GET /courses/{course_id}
+resource "aws_api_gateway_method" "get_course_by_id" {
+  rest_api_id   = aws_api_gateway_rest_api.lms_api.id
+  resource_id   = aws_api_gateway_resource.course_by_id.id
+  http_method   = "GET"
+  authorization = "NONE"
+}
 
-  default_route_settings {
-    detailed_metrics_enabled = true
+# OPTIONS /courses (CORS preflight)
+resource "aws_api_gateway_method" "options_courses" {
+  rest_api_id   = aws_api_gateway_rest_api.lms_api.id
+  resource_id   = aws_api_gateway_resource.courses.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+# OPTIONS /courses/{course_id} (CORS preflight)
+resource "aws_api_gateway_method" "options_course_by_id" {
+  rest_api_id   = aws_api_gateway_rest_api.lms_api.id
+  resource_id   = aws_api_gateway_resource.course_by_id.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+# -------------------------
+# Method Responses (CORS)
+# -------------------------
+resource "aws_api_gateway_method_response" "options_response" {
+  rest_api_id = aws_api_gateway_rest_api.lms_api.id
+  resource_id = aws_api_gateway_resource.courses.id
+  http_method = aws_api_gateway_method.options_courses.http_method
+  status_code = "200"
+
+  response_models = {
+    "application/json" = "Empty"
+  }
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true,
+    "method.response.header.Access-Control-Allow-Methods" = true,
+    "method.response.header.Access-Control-Allow-Origin"  = true
   }
 }
 
-# Permission for API Gateway to invoke Lambda
+# Integration Response (for OPTIONS)
+resource "aws_api_gateway_integration_response" "options_integration_response" {
+  rest_api_id = aws_api_gateway_rest_api.lms_api.id
+  resource_id = aws_api_gateway_resource.courses.id
+  http_method = aws_api_gateway_method.options_courses.http_method
+  status_code = aws_api_gateway_method_response.options_response.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Tenant-Id,Authorization'",
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS'",
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+  }
+}
+
+# -------------------------
+# Deployment
+# -------------------------
+resource "aws_api_gateway_deployment" "lms_api_deployment" {
+  rest_api_id = aws_api_gateway_rest_api.lms_api.id
+  depends_on = [
+    aws_api_gateway_integration.courses_integration,
+    aws_api_gateway_integration.course_by_id_integration,
+  ]
+}
+
+# Stage
+resource "aws_api_gateway_stage" "lms_stage" {
+  deployment_id = aws_api_gateway_deployment.lms_api_deployment.id
+  rest_api_id   = aws_api_gateway_rest_api.lms_api.id
+  stage_name    = "prod"
+}
+
+# -------------------------
+# Lambda Permission
+# -------------------------
 resource "aws_lambda_permission" "apigw_invoke" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.list_courses.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.http_api.execution_arn}/*/*"
+  source_arn    = "${aws_api_gateway_rest_api.lms_api.execution_arn}/*/*"
 }
