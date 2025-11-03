@@ -141,11 +141,11 @@ resource "aws_lambda_function" "list_courses" {
 }
 
 # -------------------------
-# API Gateway REST API (CORS + Lambda)
+# API Gateway REST API
 # -------------------------
 resource "aws_api_gateway_rest_api" "lms_api" {
   name        = "${local.name_prefix}-api"
-  description = "LMS Platform REST API (CORS enabled, no stage suffix)"
+  description = "LMS Platform REST API with dev stage and CORS enabled"
   endpoint_configuration {
     types = ["REGIONAL"]
   }
@@ -187,7 +187,7 @@ resource "aws_api_gateway_method" "get_course_by_id" {
   authorization = "NONE"
 }
 
-# OPTIONS /courses (CORS preflight)
+# OPTIONS /courses (for CORS)
 resource "aws_api_gateway_method" "options_courses" {
   rest_api_id   = aws_api_gateway_rest_api.lms_api.id
   resource_id   = aws_api_gateway_resource.courses.id
@@ -195,7 +195,7 @@ resource "aws_api_gateway_method" "options_courses" {
   authorization = "NONE"
 }
 
-# OPTIONS /courses/{course_id} (CORS preflight)
+# OPTIONS /courses/{course_id} (for CORS)
 resource "aws_api_gateway_method" "options_course_by_id" {
   rest_api_id   = aws_api_gateway_rest_api.lms_api.id
   resource_id   = aws_api_gateway_resource.course_by_id.id
@@ -204,7 +204,7 @@ resource "aws_api_gateway_method" "options_course_by_id" {
 }
 
 # -------------------------
-# Lambda Proxy Integrations
+# Integrations (Lambda Proxy)
 # -------------------------
 resource "aws_api_gateway_integration" "get_courses_integration" {
   rest_api_id             = aws_api_gateway_rest_api.lms_api.id
@@ -225,9 +225,8 @@ resource "aws_api_gateway_integration" "get_course_by_id_integration" {
 }
 
 # -------------------------
-# MOCK Integrations for CORS
+# MOCK Integrations for OPTIONS (CORS)
 # -------------------------
-# OPTIONS /courses
 resource "aws_api_gateway_integration" "options_integration_courses" {
   rest_api_id             = aws_api_gateway_rest_api.lms_api.id
   resource_id             = aws_api_gateway_resource.courses.id
@@ -239,7 +238,6 @@ resource "aws_api_gateway_integration" "options_integration_courses" {
   }
 }
 
-# OPTIONS /courses/{course_id}
 resource "aws_api_gateway_integration" "options_integration_course_by_id" {
   rest_api_id             = aws_api_gateway_rest_api.lms_api.id
   resource_id             = aws_api_gateway_resource.course_by_id.id
@@ -252,9 +250,8 @@ resource "aws_api_gateway_integration" "options_integration_course_by_id" {
 }
 
 # -------------------------
-# CORS Method Responses (require bools)
+# Method Responses for CORS (bools required)
 # -------------------------
-# /courses
 resource "aws_api_gateway_method_response" "options_courses" {
   rest_api_id = aws_api_gateway_rest_api.lms_api.id
   resource_id = aws_api_gateway_resource.courses.id
@@ -272,7 +269,6 @@ resource "aws_api_gateway_method_response" "options_courses" {
   }
 }
 
-# /courses/{course_id}
 resource "aws_api_gateway_method_response" "options_course_by_id" {
   rest_api_id = aws_api_gateway_rest_api.lms_api.id
   resource_id = aws_api_gateway_resource.course_by_id.id
@@ -291,7 +287,7 @@ resource "aws_api_gateway_method_response" "options_course_by_id" {
 }
 
 # -------------------------
-# Integration Responses (actual header values)
+# Integration Responses (CORS headers)
 # -------------------------
 resource "aws_api_gateway_integration_response" "options_courses" {
   rest_api_id = aws_api_gateway_rest_api.lms_api.id
@@ -320,7 +316,7 @@ resource "aws_api_gateway_integration_response" "options_course_by_id" {
 }
 
 # -------------------------
-# Deployment (no stage suffix)
+# Deployment
 # -------------------------
 resource "aws_api_gateway_deployment" "lms_api_deployment" {
   depends_on = [
@@ -331,11 +327,24 @@ resource "aws_api_gateway_deployment" "lms_api_deployment" {
   ]
 
   rest_api_id = aws_api_gateway_rest_api.lms_api.id
-  description = "LMS API deployment (no stage)"
+  description = "LMS API Deployment"
 }
 
 # -------------------------
-# Lambda Permission for API Gateway
+# Stage: dev
+# -------------------------
+resource "aws_api_gateway_stage" "dev" {
+  rest_api_id   = aws_api_gateway_rest_api.lms_api.id
+  deployment_id = aws_api_gateway_deployment.lms_api_deployment.id
+  stage_name    = "dev"
+  description   = "Development stage for LMS API"
+  tags = {
+    Environment = "dev"
+  }
+}
+
+# -------------------------
+# Lambda Permission
 # -------------------------
 resource "aws_lambda_permission" "allow_api_gateway" {
   statement_id  = "AllowAPIGatewayInvoke"
@@ -343,46 +352,4 @@ resource "aws_lambda_permission" "allow_api_gateway" {
   function_name = aws_lambda_function.list_courses.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.lms_api.execution_arn}/*/*"
-}
-
-# -------------------------
-# REST API Stage (dev)
-# -------------------------
-resource "aws_api_gateway_stage" "dev" {
-  rest_api_id   = aws_api_gateway_rest_api.lms_api.id
-  deployment_id = aws_api_gateway_deployment.lms_api_deployment.id
-  stage_name    = "dev"
-
-  description = "Development stage for LMS API"
-
-  variables = {
-    lambdaAlias = "live"
-  }
-
-  access_log_settings {
-    destination_arn = aws_cloudwatch_log_group.api_gateway_logs.arn
-    format = jsonencode({
-      requestId               = "$context.requestId"
-      ip                      = "$context.identity.sourceIp"
-      caller                  = "$context.identity.caller"
-      user                    = "$context.identity.user"
-      requestTime             = "$context.requestTime"
-      httpMethod              = "$context.httpMethod"
-      resourcePath            = "$context.resourcePath"
-      status                  = "$context.status"
-      protocol                = "$context.protocol"
-      responseLength          = "$context.responseLength"
-      integrationErrorMessage = "$context.integrationErrorMessage"
-    })
-  }
-
-  tags = {
-    Environment = "dev"
-  }
-}
-
-# CloudWatch log group for API Gateway access logs
-resource "aws_cloudwatch_log_group" "api_gateway_logs" {
-  name              = "/aws/apigateway/${local.name_prefix}-api-dev"
-  retention_in_days = 14
 }
