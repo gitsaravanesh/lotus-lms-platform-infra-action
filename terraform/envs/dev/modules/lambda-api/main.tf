@@ -121,7 +121,7 @@ resource "aws_iam_role_policy" "lambda_policy" {
 }
 
 #############################################
-# LAMBDA FUNCTION: LIST COURSES
+# LAMBDA FUNCTIONS
 #############################################
 resource "aws_lambda_function" "list_courses" {
   function_name = "${local.name_prefix}-list-courses"
@@ -146,9 +146,6 @@ resource "aws_lambda_function" "list_courses" {
   ]
 }
 
-#############################################
-# LAMBDA FUNCTION: CREATE ORDER
-#############################################
 resource "aws_lambda_function" "create_order" {
   function_name = "${local.name_prefix}-create-order"
   role          = aws_iam_role.lambda_exec.arn
@@ -179,30 +176,27 @@ resource "aws_lambda_function" "create_order" {
 #############################################
 resource "aws_api_gateway_rest_api" "lms_api" {
   name        = "${local.name_prefix}-api"
-  description = "LMS REST API with stable dev stage"
+  description = "LMS REST API with full CORS and stable dev stage"
   endpoint_configuration {
     types = ["REGIONAL"]
   }
 }
 
 #############################################
-# API RESOURCES
+# RESOURCES
 #############################################
-# /courses
 resource "aws_api_gateway_resource" "courses" {
   rest_api_id = aws_api_gateway_rest_api.lms_api.id
   parent_id   = aws_api_gateway_rest_api.lms_api.root_resource_id
   path_part   = "courses"
 }
 
-# /courses/{course_id}
 resource "aws_api_gateway_resource" "course_by_id" {
   rest_api_id = aws_api_gateway_rest_api.lms_api.id
   parent_id   = aws_api_gateway_resource.courses.id
   path_part   = "{course_id}"
 }
 
-# /create-order
 resource "aws_api_gateway_resource" "create_order" {
   rest_api_id = aws_api_gateway_rest_api.lms_api.id
   parent_id   = aws_api_gateway_rest_api.lms_api.root_resource_id
@@ -230,6 +224,28 @@ resource "aws_api_gateway_method" "post_create_order" {
   rest_api_id   = aws_api_gateway_rest_api.lms_api.id
   resource_id   = aws_api_gateway_resource.create_order.id
   http_method   = "POST"
+  authorization = "NONE"
+}
+
+# ✅ OPTIONS (CORS) for all
+resource "aws_api_gateway_method" "options_courses" {
+  rest_api_id   = aws_api_gateway_rest_api.lms_api.id
+  resource_id   = aws_api_gateway_resource.courses.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_method" "options_course_by_id" {
+  rest_api_id   = aws_api_gateway_rest_api.lms_api.id
+  resource_id   = aws_api_gateway_resource.course_by_id.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_method" "options_create_order" {
+  rest_api_id   = aws_api_gateway_rest_api.lms_api.id
+  resource_id   = aws_api_gateway_resource.create_order.id
+  http_method   = "OPTIONS"
   authorization = "NONE"
 }
 
@@ -263,14 +279,117 @@ resource "aws_api_gateway_integration" "create_order_integration" {
   uri                     = aws_lambda_function.create_order.invoke_arn
 }
 
+# ✅ MOCK INTEGRATIONS for OPTIONS (CORS)
+resource "aws_api_gateway_integration" "options_integration_courses" {
+  rest_api_id             = aws_api_gateway_rest_api.lms_api.id
+  resource_id             = aws_api_gateway_resource.courses.id
+  http_method             = aws_api_gateway_method.options_courses.http_method
+  type                    = "MOCK"
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+resource "aws_api_gateway_integration" "options_integration_course_by_id" {
+  rest_api_id             = aws_api_gateway_rest_api.lms_api.id
+  resource_id             = aws_api_gateway_resource.course_by_id.id
+  http_method             = aws_api_gateway_method.options_course_by_id.http_method
+  type                    = "MOCK"
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+resource "aws_api_gateway_integration" "options_integration_create_order" {
+  rest_api_id             = aws_api_gateway_rest_api.lms_api.id
+  resource_id             = aws_api_gateway_resource.create_order.id
+  http_method             = aws_api_gateway_method.options_create_order.http_method
+  type                    = "MOCK"
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
 #############################################
-# DEPLOYMENT & STAGE (Stable dev)
+# CORS RESPONSES
+#############################################
+locals {
+  cors_headers = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+# Method responses for OPTIONS
+resource "aws_api_gateway_method_response" "options_courses" {
+  rest_api_id = aws_api_gateway_rest_api.lms_api.id
+  resource_id = aws_api_gateway_resource.courses.id
+  http_method = aws_api_gateway_method.options_courses.http_method
+  status_code = "200"
+  response_parameters = local.cors_headers
+}
+
+resource "aws_api_gateway_method_response" "options_course_by_id" {
+  rest_api_id = aws_api_gateway_rest_api.lms_api.id
+  resource_id = aws_api_gateway_resource.course_by_id.id
+  http_method = aws_api_gateway_method.options_course_by_id.http_method
+  status_code = "200"
+  response_parameters = local.cors_headers
+}
+
+resource "aws_api_gateway_method_response" "options_create_order" {
+  rest_api_id = aws_api_gateway_rest_api.lms_api.id
+  resource_id = aws_api_gateway_resource.create_order.id
+  http_method = aws_api_gateway_method.options_create_order.http_method
+  status_code = "200"
+  response_parameters = local.cors_headers
+}
+
+# Integration responses for OPTIONS
+resource "aws_api_gateway_integration_response" "options_courses" {
+  rest_api_id = aws_api_gateway_rest_api.lms_api.id
+  resource_id = aws_api_gateway_resource.courses.id
+  http_method = aws_api_gateway_method.options_courses.http_method
+  status_code = "200"
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Tenant-Id,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS,POST'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+  }
+}
+
+resource "aws_api_gateway_integration_response" "options_course_by_id" {
+  rest_api_id = aws_api_gateway_rest_api.lms_api.id
+  resource_id = aws_api_gateway_resource.course_by_id.id
+  http_method = aws_api_gateway_method.options_course_by_id.http_method
+  status_code = "200"
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Tenant-Id,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+  }
+}
+
+resource "aws_api_gateway_integration_response" "options_create_order" {
+  rest_api_id = aws_api_gateway_rest_api.lms_api.id
+  resource_id = aws_api_gateway_resource.create_order.id
+  http_method = aws_api_gateway_method.options_create_order.http_method
+  status_code = "200"
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Tenant-Id,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'POST,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+  }
+}
+
+#############################################
+# DEPLOYMENT & STAGE
 #############################################
 resource "aws_api_gateway_deployment" "lms_api_deployment" {
   rest_api_id = aws_api_gateway_rest_api.lms_api.id
   description = "LMS API deployment for dev environment"
 
-  # ✅ Correct integration references
   triggers = {
     redeploy_hash = sha1(jsonencode([
       aws_api_gateway_integration.get_courses_integration.id,
@@ -283,7 +402,10 @@ resource "aws_api_gateway_deployment" "lms_api_deployment" {
   depends_on = [
     aws_api_gateway_integration.get_courses_integration,
     aws_api_gateway_integration.get_course_by_id_integration,
-    aws_api_gateway_integration.create_order_integration
+    aws_api_gateway_integration.create_order_integration,
+    aws_api_gateway_integration.options_integration_courses,
+    aws_api_gateway_integration.options_integration_course_by_id,
+    aws_api_gateway_integration.options_integration_create_order
   ]
 }
 
