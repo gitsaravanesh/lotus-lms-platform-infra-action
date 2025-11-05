@@ -32,9 +32,9 @@ resource "aws_s3_bucket_public_access_block" "lambda_artifacts_access" {
   restrict_public_buckets = true
 }
 
-# -------------------------
-# DynamoDB Table
-# -------------------------
+#############################################
+# DYNAMODB TABLE
+#############################################
 resource "aws_dynamodb_table" "courses" {
   name         = var.courses_table_name
   billing_mode = "PAY_PER_REQUEST"
@@ -56,9 +56,9 @@ resource "aws_dynamodb_table" "courses" {
   }
 }
 
-# -------------------------
-# IAM Role for Lambda
-# -------------------------
+#############################################
+# IAM ROLE FOR LAMBDA
+#############################################
 data "aws_iam_policy_document" "lambda_assume" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -110,9 +110,9 @@ resource "aws_iam_role_policy" "lambda_policy" {
   })
 }
 
-# -------------------------
-# Lambda Function (from S3)
-# -------------------------
+#############################################
+# LAMBDA FUNCTION: LIST COURSES
+#############################################
 resource "aws_lambda_function" "list_courses" {
   function_name = "${local.name_prefix}-list-courses"
   role          = aws_iam_role.lambda_exec.arn
@@ -121,12 +121,8 @@ resource "aws_lambda_function" "list_courses" {
   timeout       = var.lambda_timeout
   memory_size   = var.lambda_memory
 
-  # ✅ Use the S3 bucket created above
   s3_bucket = aws_s3_bucket.lambda_artifacts.bucket
-
-  # 👇 Example of dynamic key name (update as needed)
-  # You can upload your code as `list_courses.zip` into the same bucket
-  s3_key = "lambda/list_courses.zip"
+  s3_key    = "lambda/list_courses.zip"
 
   environment {
     variables = {
@@ -140,9 +136,37 @@ resource "aws_lambda_function" "list_courses" {
   ]
 }
 
-# -------------------------
-# API Gateway REST API
-# -------------------------
+#############################################
+# LAMBDA FUNCTION: CREATE ORDER
+#############################################
+resource "aws_lambda_function" "create_order" {
+  function_name = "${local.name_prefix}-create-order"
+  role          = aws_iam_role.lambda_exec.arn
+  runtime       = var.lambda_runtime
+  handler       = "lambda_create_order.lambda_handler"
+  timeout       = var.lambda_timeout
+  memory_size   = var.lambda_memory
+
+  s3_bucket = aws_s3_bucket.lambda_artifacts.bucket
+  s3_key    = "lambda/create_order.zip"
+
+  environment {
+    variables = {
+      COURSES_TABLE       = aws_dynamodb_table.courses.name
+      RAZORPAY_KEY_ID     = "rzp_test_RbvMQRpHT3gMcN"
+      RAZORPAY_KEY_SECRET = "UGyRBwnth5tIMPTsWeQ4wNFO"
+    }
+  }
+
+  depends_on = [
+    aws_iam_role_policy.lambda_policy,
+    aws_s3_bucket.lambda_artifacts
+  ]
+}
+
+#############################################
+# API GATEWAY REST API
+#############################################
 resource "aws_api_gateway_rest_api" "lms_api" {
   name        = "${local.name_prefix}-api"
   description = "LMS Platform REST API with dev stage and CORS enabled"
@@ -151,9 +175,9 @@ resource "aws_api_gateway_rest_api" "lms_api" {
   }
 }
 
-# -------------------------
-# Resources
-# -------------------------
+#############################################
+# API RESOURCES
+#############################################
 # /courses
 resource "aws_api_gateway_resource" "courses" {
   rest_api_id = aws_api_gateway_rest_api.lms_api.id
@@ -168,10 +192,16 @@ resource "aws_api_gateway_resource" "course_by_id" {
   path_part   = "{course_id}"
 }
 
-# -------------------------
-# Methods
-# -------------------------
-# GET /courses
+# /create-order
+resource "aws_api_gateway_resource" "create_order" {
+  rest_api_id = aws_api_gateway_rest_api.lms_api.id
+  parent_id   = aws_api_gateway_rest_api.lms_api.root_resource_id
+  path_part   = "create-order"
+}
+
+#############################################
+# METHODS
+#############################################
 resource "aws_api_gateway_method" "get_courses" {
   rest_api_id   = aws_api_gateway_rest_api.lms_api.id
   resource_id   = aws_api_gateway_resource.courses.id
@@ -179,7 +209,6 @@ resource "aws_api_gateway_method" "get_courses" {
   authorization = "NONE"
 }
 
-# GET /courses/{course_id}
 resource "aws_api_gateway_method" "get_course_by_id" {
   rest_api_id   = aws_api_gateway_rest_api.lms_api.id
   resource_id   = aws_api_gateway_resource.course_by_id.id
@@ -187,7 +216,6 @@ resource "aws_api_gateway_method" "get_course_by_id" {
   authorization = "NONE"
 }
 
-# OPTIONS /courses (for CORS)
 resource "aws_api_gateway_method" "options_courses" {
   rest_api_id   = aws_api_gateway_rest_api.lms_api.id
   resource_id   = aws_api_gateway_resource.courses.id
@@ -195,7 +223,6 @@ resource "aws_api_gateway_method" "options_courses" {
   authorization = "NONE"
 }
 
-# OPTIONS /courses/{course_id} (for CORS)
 resource "aws_api_gateway_method" "options_course_by_id" {
   rest_api_id   = aws_api_gateway_rest_api.lms_api.id
   resource_id   = aws_api_gateway_resource.course_by_id.id
@@ -203,9 +230,25 @@ resource "aws_api_gateway_method" "options_course_by_id" {
   authorization = "NONE"
 }
 
-# -------------------------
-# Integrations (Lambda Proxy)
-# -------------------------
+# POST /create-order
+resource "aws_api_gateway_method" "post_create_order" {
+  rest_api_id   = aws_api_gateway_rest_api.lms_api.id
+  resource_id   = aws_api_gateway_resource.create_order.id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+# OPTIONS /create-order
+resource "aws_api_gateway_method" "options_create_order" {
+  rest_api_id   = aws_api_gateway_rest_api.lms_api.id
+  resource_id   = aws_api_gateway_resource.create_order.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+#############################################
+# INTEGRATIONS
+#############################################
 resource "aws_api_gateway_integration" "get_courses_integration" {
   rest_api_id             = aws_api_gateway_rest_api.lms_api.id
   resource_id             = aws_api_gateway_resource.courses.id
@@ -224,15 +267,23 @@ resource "aws_api_gateway_integration" "get_course_by_id_integration" {
   uri                     = aws_lambda_function.list_courses.invoke_arn
 }
 
-# -------------------------
-# MOCK Integrations for OPTIONS (CORS)
-# -------------------------
+resource "aws_api_gateway_integration" "create_order_integration" {
+  rest_api_id             = aws_api_gateway_rest_api.lms_api.id
+  resource_id             = aws_api_gateway_resource.create_order.id
+  http_method             = aws_api_gateway_method.post_create_order.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.create_order.invoke_arn
+}
+
+#############################################
+# CORS OPTIONS INTEGRATIONS
+#############################################
 resource "aws_api_gateway_integration" "options_integration_courses" {
   rest_api_id             = aws_api_gateway_rest_api.lms_api.id
   resource_id             = aws_api_gateway_resource.courses.id
   http_method             = aws_api_gateway_method.options_courses.http_method
   type                    = "MOCK"
-
   request_templates = {
     "application/json" = "{\"statusCode\": 200}"
   }
@@ -243,15 +294,24 @@ resource "aws_api_gateway_integration" "options_integration_course_by_id" {
   resource_id             = aws_api_gateway_resource.course_by_id.id
   http_method             = aws_api_gateway_method.options_course_by_id.http_method
   type                    = "MOCK"
-
   request_templates = {
     "application/json" = "{\"statusCode\": 200}"
   }
 }
 
-# -------------------------
-# Method Responses for CORS (bools required)
-# -------------------------
+resource "aws_api_gateway_integration" "options_integration_create_order" {
+  rest_api_id             = aws_api_gateway_rest_api.lms_api.id
+  resource_id             = aws_api_gateway_resource.create_order.id
+  http_method             = aws_api_gateway_method.options_create_order.http_method
+  type                    = "MOCK"
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+#############################################
+# CORS METHOD RESPONSES
+#############################################
 resource "aws_api_gateway_method_response" "options_courses" {
   rest_api_id = aws_api_gateway_rest_api.lms_api.id
   resource_id = aws_api_gateway_resource.courses.id
@@ -286,9 +346,26 @@ resource "aws_api_gateway_method_response" "options_course_by_id" {
   }
 }
 
-# -------------------------
-# Integration Responses (CORS headers)
-# -------------------------
+resource "aws_api_gateway_method_response" "options_create_order" {
+  rest_api_id = aws_api_gateway_rest_api.lms_api.id
+  resource_id = aws_api_gateway_resource.create_order.id
+  http_method = aws_api_gateway_method.options_create_order.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+
+  response_models = {
+    "application/json" = "Empty"
+  }
+}
+
+#############################################
+# CORS INTEGRATION RESPONSES
+#############################################
 resource "aws_api_gateway_integration_response" "options_courses" {
   rest_api_id = aws_api_gateway_rest_api.lms_api.id
   resource_id = aws_api_gateway_resource.courses.id
@@ -315,24 +392,36 @@ resource "aws_api_gateway_integration_response" "options_course_by_id" {
   }
 }
 
-# -------------------------
-# Deployment
-# -------------------------
+resource "aws_api_gateway_integration_response" "options_integration_response_create_order" {
+  rest_api_id = aws_api_gateway_rest_api.lms_api.id
+  resource_id = aws_api_gateway_resource.create_order.id
+  http_method = aws_api_gateway_method.options_create_order.http_method
+  status_code = aws_api_gateway_method_response.options_create_order.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Tenant-Id,Authorization'"
+    "method.response.header.Access-Control-Allow-Methods" = "'POST,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+  }
+}
+
+#############################################
+# DEPLOYMENT AND STAGE
+#############################################
 resource "aws_api_gateway_deployment" "lms_api_deployment" {
   depends_on = [
     aws_api_gateway_integration.get_courses_integration,
     aws_api_gateway_integration.get_course_by_id_integration,
     aws_api_gateway_integration.options_integration_courses,
-    aws_api_gateway_integration.options_integration_course_by_id
+    aws_api_gateway_integration.options_integration_course_by_id,
+    aws_api_gateway_integration.create_order_integration,
+    aws_api_gateway_integration.options_integration_create_order
   ]
 
   rest_api_id = aws_api_gateway_rest_api.lms_api.id
   description = "LMS API Deployment"
 }
 
-# -------------------------
-# Stage: dev
-# -------------------------
 resource "aws_api_gateway_stage" "dev" {
   rest_api_id   = aws_api_gateway_rest_api.lms_api.id
   deployment_id = aws_api_gateway_deployment.lms_api_deployment.id
@@ -343,13 +432,21 @@ resource "aws_api_gateway_stage" "dev" {
   }
 }
 
-# -------------------------
-# Lambda Permission
-# -------------------------
+#############################################
+# LAMBDA PERMISSIONS
+#############################################
 resource "aws_lambda_permission" "allow_api_gateway" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.list_courses.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.lms_api.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "allow_api_gateway_create_order" {
+  statement_id  = "AllowAPIGatewayInvokeCreateOrder"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.create_order.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.lms_api.execution_arn}/*/*"
 }
