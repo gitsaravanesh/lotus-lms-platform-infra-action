@@ -1,3 +1,12 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
 locals {
   name_prefix = "lms-infra"
   env         = "dev"
@@ -255,17 +264,18 @@ resource "aws_api_gateway_integration" "create_order_integration" {
 }
 
 #############################################
-# DEPLOYMENT & STAGE (Stable name)
+# DEPLOYMENT & STAGE (Stable dev)
 #############################################
 resource "aws_api_gateway_deployment" "lms_api_deployment" {
   rest_api_id = aws_api_gateway_rest_api.lms_api.id
   description = "LMS API deployment for dev environment"
 
+  # ✅ Correct integration references
   triggers = {
     redeploy_hash = sha1(jsonencode([
-      aws_api_gateway_integration.get_courses.id,
-      aws_api_gateway_integration.get_course_by_id.id,
-      aws_api_gateway_integration.create_order.id,
+      aws_api_gateway_integration.get_courses_integration.id,
+      aws_api_gateway_integration.get_course_by_id_integration.id,
+      aws_api_gateway_integration.create_order_integration.id,
       timestamp()
     ]))
   }
