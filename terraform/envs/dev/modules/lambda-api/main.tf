@@ -450,3 +450,49 @@ resource "aws_lambda_permission" "allow_api_gateway_create_order" {
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.lms_api.execution_arn}/*/*"
 }
+
+resource "aws_api_gateway_deployment" "lms_api_deployment" {
+  depends_on = [
+    aws_api_gateway_integration.get_courses_integration,
+    aws_api_gateway_integration.get_course_by_id_integration,
+    aws_api_gateway_integration.create_order_integration,
+    aws_api_gateway_integration.options_integration_courses,
+    aws_api_gateway_integration.options_integration_course_by_id,
+    aws_api_gateway_integration.options_integration_create_order
+  ]
+
+  rest_api_id = aws_api_gateway_rest_api.lms_api.id
+  description = "LMS API Deployment"
+
+  # 👇 Forces redeployment when any integration changes
+  triggers = {
+    redeploy_hash = sha1(jsonencode([
+      aws_api_gateway_integration.get_courses_integration.id,
+      aws_api_gateway_integration.create_order_integration.id,
+      aws_api_gateway_method.post_create_order.id
+    ]))
+  }
+}
+
+resource "aws_api_gateway_deployment" "lms_api_deployment" {
+  depends_on = [
+    aws_api_gateway_integration.get_courses_integration,
+    aws_api_gateway_integration.get_course_by_id_integration,
+    aws_api_gateway_integration.create_order_integration,
+    aws_api_gateway_integration.options_integration_courses,
+    aws_api_gateway_integration.options_integration_course_by_id,
+    aws_api_gateway_integration.options_integration_create_order
+  ]
+
+  rest_api_id = aws_api_gateway_rest_api.lms_api.id
+  description = "LMS API Deployment"
+
+  # 👇 Forces redeployment when any integration changes
+  triggers = {
+    redeploy_hash = sha1(jsonencode([
+      aws_api_gateway_integration.get_courses_integration.id,
+      aws_api_gateway_integration.create_order_integration.id,
+      aws_api_gateway_method.post_create_order.id
+    ]))
+  }
+}
