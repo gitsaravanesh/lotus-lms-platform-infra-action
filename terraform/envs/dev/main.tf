@@ -65,3 +65,11 @@ module "cloudfront" {
 module "lambda" {
   source      = "./modules/lambda-api"
 }
+
+# Invoke the existing lambda-api module (ensure module folder exists)
+module "lambda_api" {
+  source         = "./modules/lambda-api"
+  project_prefix = var.project_prefix
+  environment    = var.environment
+  backend_principals = var.backend_principals
+}

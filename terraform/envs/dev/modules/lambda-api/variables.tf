@@ -37,3 +37,21 @@ variable "stage_name" {
   type    = string
   default = "dev"
 }
+
+variable "project_prefix" {
+  description = "Prefix for resource names"
+  type        = string
+  default     = "lotus-lms"
+}
+
+variable "environment" {
+  description = "Environment name"
+  type        = string
+  default     = "dev"
+}
+
+variable "backend_principals" {
+  description = "List of IAM service principals that can assume the backend role"
+  type        = list(string)
+  default     = ["ec2.amazonaws.com", "ecs-tasks.amazonaws.com", "lambda.amazonaws.com"]
+}

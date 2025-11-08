@@ -150,7 +150,7 @@ resource "aws_lambda_function" "create_order" {
   function_name = "${local.name_prefix}-create-order"
   role          = aws_iam_role.lambda_exec.arn
   runtime       = var.lambda_runtime
-  handler       = "create_order.lambda_handler"
+  handler       = "lambda_create_order.lambda_handler"
   timeout       = var.lambda_timeout
   memory_size   = var.lambda_memory
 
