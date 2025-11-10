@@ -18,13 +18,13 @@ output "frontend_website_url" {
 }
 
 output "videos_bucket_name" {
-  value = module.lambda_api.videos_bucket_name
+  value = module.lambda-api.videos_bucket_name
 }
 
 output "videos_table_name" {
-  value = module.lambda_api.videos_table_name
+  value = module.lambda-api.videos_table_name
 }
 
 output "backend_role_arn" {
-  value = module.lambda_api.backend_role_arn
+  value = module.lambda-api.backend_role_arn
 }
