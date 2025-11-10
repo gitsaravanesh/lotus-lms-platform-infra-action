@@ -142,6 +142,8 @@ resource "aws_lambda_function" "list_courses" {
   s3_bucket = aws_s3_bucket.lambda_artifacts.bucket
   s3_key    = "lambda/list_courses.zip"
 
+  kms_key_arn = ""
+
   environment {
     variables = {
       COURSES_TABLE = aws_dynamodb_table.courses.name
