@@ -28,7 +28,7 @@ resource "aws_s3_bucket" "videos_bucket" {
 }
 
 resource "aws_dynamodb_table" "videos_table" {
-  name         = "${var.project_prefix}-videos-${var.environment}"
+  name         = "${var.project_prefix}-videos"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "course_id"
   range_key    = "video_id"
