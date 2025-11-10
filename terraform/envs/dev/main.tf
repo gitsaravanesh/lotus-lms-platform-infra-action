@@ -45,9 +45,6 @@ module "s3" {
   bucket_name = "lms-frontend-dev-${random_id.suffix.hex}"
   environment = "dev"
 
-  providers = {
-    aws = aws
-  }
 }
 
 resource "random_id" "suffix" {

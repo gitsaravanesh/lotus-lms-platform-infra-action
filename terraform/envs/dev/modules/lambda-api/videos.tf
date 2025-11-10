@@ -5,25 +5,37 @@ resource "random_id" "bucket_id" {
 }
 
 resource "aws_s3_bucket" "videos_bucket" {
-  bucket = "${var.project_prefix}-videos-${random_id.bucket_id.hex}-${var.environment}"
-  acl    = "private"
-
-  versioning {
-    enabled = true
-  }
-
-  lifecycle_rule {
-    id      = "noncurrent-version-expiration"
-    enabled = true
-
-    noncurrent_version_expiration {
-      days = 30
-    }
-  }
+  bucket = "lotus-lms-videos-${random_id.bucket_id.hex}-${var.environment}"
 
   tags = {
-    Name        = "${var.project_prefix}-videos"
+    Name        = "lotus-lms-videos"
     Environment = var.environment
+  }
+}
+
+resource "aws_s3_bucket_acl" "videos_bucket_acl" {
+  bucket = aws_s3_bucket.videos_bucket.id
+  acl    = "private"
+}
+
+resource "aws_s3_bucket_versioning" "videos_bucket_versioning" {
+  bucket = aws_s3_bucket.videos_bucket.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "videos_bucket_lifecycle" {
+  bucket = aws_s3_bucket.videos_bucket.id
+
+  rule {
+    id     = "noncurrent-version-expiration"
+    status = "Enabled"
+
+    noncurrent_version_expiration {
+      noncurrent_days = 30
+    }
   }
 }
 
