@@ -32,12 +32,6 @@ variable "project_prefix" {
   default     = "lotus-lms"
 }
 
-variable "environment" {
-  description = "Environment name"
-  type        = string
-  default     = "dev"
-}
-
 variable "backend_principals" {
   description = "List of IAM service principals that can assume the backend role"
   type        = list(string)

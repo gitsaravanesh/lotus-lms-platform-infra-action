@@ -38,12 +38,6 @@ variable "stage_name" {
   default = "dev"
 }
 
-variable "project_prefix" {
-  description = "Prefix for resource names"
-  type        = string
-  default     = "lotus-lms"
-}
-
 variable "environment" {
   description = "Environment name"
   type        = string
