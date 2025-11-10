@@ -5,7 +5,7 @@ variable "aws_region" {
 
 variable "project_prefix" {
   type    = string
-  default = "lms"
+  default = "lotus-lms"
 }
 
 variable "lambda_runtime" {
