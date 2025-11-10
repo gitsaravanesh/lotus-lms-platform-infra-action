@@ -181,15 +181,7 @@ resource "aws_lambda_function" "list_videos" {
 }
 
 # 3) API Gateway resource: attach under existing REST API
-# You likely already have aws_api_gateway_rest_api.lms_api defined in module.lambda.
-resource "aws_api_gateway_resource" "course_videos" {
-  rest_api_id = aws_api_gateway_rest_api.lms_api.id
-  parent_id   = aws_api_gateway_rest_api.lms_api.root_resource_id  # or the courses resource id if nested
-  path_part   = "courses"
-  # If you want nested /courses/{course_id}/videos, create the /courses resource first and then children.
-}
 
-# Example for nested resource: /courses/{course_id}/videos
 resource "aws_api_gateway_resource" "courses_id" {
   rest_api_id = aws_api_gateway_rest_api.lms_api.id
   parent_id   = aws_api_gateway_rest_api.lms_api.root_resource_id
