@@ -436,7 +436,7 @@ resource "aws_api_gateway_stage" "dev" {
   }
 
   lifecycle {
-    ignore_changes = [deployment_id]
+    create_before_destroy = true
   }
 }
 
