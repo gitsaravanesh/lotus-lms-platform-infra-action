@@ -347,6 +347,7 @@ resource "aws_api_gateway_method_response" "options_create_order" {
 }
 
 # Integration responses for OPTIONS
+# Integration responses for OPTIONS
 resource "aws_api_gateway_integration_response" "options_courses" {
   rest_api_id = aws_api_gateway_rest_api.lms_api.id
   resource_id = aws_api_gateway_resource.courses.id
@@ -357,6 +358,11 @@ resource "aws_api_gateway_integration_response" "options_courses" {
     "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS,POST'"
     "method.response.header.Access-Control-Allow-Origin"  = "'*'"
   }
+
+  depends_on = [
+    aws_api_gateway_integration.options_integration_courses,
+    aws_api_gateway_method_response.options_courses
+  ]
 }
 
 resource "aws_api_gateway_integration_response" "options_course_by_id" {
@@ -369,6 +375,11 @@ resource "aws_api_gateway_integration_response" "options_course_by_id" {
     "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS'"
     "method.response.header.Access-Control-Allow-Origin"  = "'*'"
   }
+
+  depends_on = [
+    aws_api_gateway_integration.options_integration_course_by_id,
+    aws_api_gateway_method_response.options_course_by_id
+  ]
 }
 
 resource "aws_api_gateway_integration_response" "options_create_order" {
@@ -381,6 +392,11 @@ resource "aws_api_gateway_integration_response" "options_create_order" {
     "method.response.header.Access-Control-Allow-Methods" = "'POST,OPTIONS'"
     "method.response.header.Access-Control-Allow-Origin"  = "'*'"
   }
+
+  depends_on = [
+    aws_api_gateway_integration.options_integration_create_order,
+    aws_api_gateway_method_response.options_create_order
+  ]
 }
 
 #############################################
