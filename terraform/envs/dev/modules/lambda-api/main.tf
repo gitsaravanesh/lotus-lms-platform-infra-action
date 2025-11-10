@@ -115,7 +115,15 @@ resource "aws_iam_role_policy" "lambda_policy" {
           "s3:GetObject"
         ]
         Resource = "${aws_s3_bucket.lambda_artifacts.arn}/*"
-      }
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey"
+        ]
+        Resource = "arn:aws:kms:ap-south-1:944308403252:key/c1a60caa-ae0d-420d-9fd4-3ee2ece0bbc3"
+      }      
     ]
   })
 }
