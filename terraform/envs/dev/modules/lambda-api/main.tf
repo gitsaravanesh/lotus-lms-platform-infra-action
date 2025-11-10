@@ -167,6 +167,8 @@ resource "aws_lambda_function" "create_order" {
   s3_bucket = aws_s3_bucket.lambda_artifacts.bucket
   s3_key    = "lambda/create_order.zip"
 
+  kms_key_arn = ""
+
   environment {
     variables = {
       COURSES_TABLE       = aws_dynamodb_table.courses.name
