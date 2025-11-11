@@ -150,7 +150,7 @@ resource "null_resource" "create_placeholder_zip" {
 resource "aws_lambda_function" "list_videos" {
   function_name = "lms-infra-list-videos"
   runtime       = "python3.10"
-  handler       = "handler.handler"
+  handler       = "list_videos.handler"
   role          = aws_iam_role.lambda_exec.arn
 
   s3_bucket = aws_s3_bucket.lambda_artifacts.bucket
