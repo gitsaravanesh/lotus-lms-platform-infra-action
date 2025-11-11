@@ -20,8 +20,3 @@ output "videos_table_name" {
   description = "Name of the DynamoDB table for video metadata"
   value       = aws_dynamodb_table.videos_table.name
 }
-
-output "backend_role_arn" {
-  description = "ARN of the backend IAM role"
-  value       = aws_iam_role.backend_role.arn
-}
