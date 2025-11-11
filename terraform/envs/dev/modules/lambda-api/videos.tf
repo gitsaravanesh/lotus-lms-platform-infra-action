@@ -1,7 +1,3 @@
-# Data sources (if not already in your module)
-data "aws_region" "current" {}
-data "aws_caller_identity" "current" {}
-
 # Random ID for unique bucket naming (may already exist in your module)
 resource "random_id" "bucket_id" {
   byte_length = 4
