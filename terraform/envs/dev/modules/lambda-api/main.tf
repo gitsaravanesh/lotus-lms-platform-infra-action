@@ -423,6 +423,13 @@ resource "aws_api_gateway_deployment" "lms_api_deployment" {
       aws_api_gateway_integration.get_courses_integration.id,
       aws_api_gateway_integration.get_course_by_id_integration.id,
       aws_api_gateway_integration.create_order_integration.id,
+
+      # ADD THESE NEW LINES for list-videos:
+      aws_api_gateway_resource.course_videos.id,
+      aws_api_gateway_method.get_course_videos.id,
+      aws_api_gateway_integration.get_course_videos_integration.id,
+      aws_api_gateway_method.options_course_videos.id,
+      aws_api_gateway_integration.options_course_videos_integration.id, 
       timestamp()
     ]))
   }
@@ -433,7 +440,9 @@ resource "aws_api_gateway_deployment" "lms_api_deployment" {
     aws_api_gateway_integration.create_order_integration,
     aws_api_gateway_integration.options_integration_courses,
     aws_api_gateway_integration.options_integration_course_by_id,
-    aws_api_gateway_integration.options_integration_create_order
+    aws_api_gateway_integration.options_integration_create_order,
+    aws_api_gateway_integration.get_course_videos_integration,
+    aws_api_gateway_integration.options_course_videos_integration
   ]
 }
 
