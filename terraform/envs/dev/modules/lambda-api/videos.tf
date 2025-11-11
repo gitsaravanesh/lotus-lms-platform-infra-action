@@ -1,9 +1,13 @@
-# Videos (S3 + DynamoDB + IAM) resources inside the lambda-api module
+# Data sources (if not already in your module)
+data "aws_region" "current" {}
+data "aws_caller_identity" "current" {}
 
+# Random ID for unique bucket naming (may already exist in your module)
 resource "random_id" "bucket_id" {
   byte_length = 4
 }
 
+# S3 bucket for videos
 resource "aws_s3_bucket" "videos_bucket" {
   bucket = "lotus-lms-videos-${random_id.bucket_id.hex}-${var.environment}"
 
@@ -13,11 +17,37 @@ resource "aws_s3_bucket" "videos_bucket" {
   }
 }
 
+# Enable bucket ownership controls (required for ACLs)
+resource "aws_s3_bucket_ownership_controls" "videos_bucket_ownership" {
+  bucket = aws_s3_bucket.videos_bucket.id
+
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
+# Disable public access
+resource "aws_s3_bucket_public_access_block" "videos_bucket_public_access" {
+  bucket = aws_s3_bucket.videos_bucket.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+# ACL (after ownership controls)
 resource "aws_s3_bucket_acl" "videos_bucket_acl" {
+  depends_on = [
+    aws_s3_bucket_ownership_controls.videos_bucket_ownership,
+    aws_s3_bucket_public_access_block.videos_bucket_public_access
+  ]
+
   bucket = aws_s3_bucket.videos_bucket.id
   acl    = "private"
 }
 
+# Versioning
 resource "aws_s3_bucket_versioning" "videos_bucket_versioning" {
   bucket = aws_s3_bucket.videos_bucket.id
 
@@ -26,6 +56,7 @@ resource "aws_s3_bucket_versioning" "videos_bucket_versioning" {
   }
 }
 
+# Lifecycle configuration (FIXED: added filter block)
 resource "aws_s3_bucket_lifecycle_configuration" "videos_bucket_lifecycle" {
   bucket = aws_s3_bucket.videos_bucket.id
 
@@ -33,14 +64,20 @@ resource "aws_s3_bucket_lifecycle_configuration" "videos_bucket_lifecycle" {
     id     = "noncurrent-version-expiration"
     status = "Enabled"
 
+    # Add this filter block to fix the warning/error
+    filter {
+      prefix = ""
+    }
+
     noncurrent_version_expiration {
       noncurrent_days = 30
     }
   }
 }
 
+# DynamoDB table for videos metadata
 resource "aws_dynamodb_table" "videos_table" {
-  name         = "${var.project_prefix}-videos"
+  name         = "lotus-lms-videos"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "course_id"
   range_key    = "video_id"
@@ -56,97 +93,15 @@ resource "aws_dynamodb_table" "videos_table" {
   }
 
   tags = {
-    Name        = "${var.project_prefix}-videos"
+    Name        = "lotus-lms-videos"
     Environment = var.environment
   }
 }
 
-data "aws_iam_policy_document" "backend_assume_role" {
-  statement {
-    effect = "Allow"
-    principals {
-      type        = "Service"
-      identifiers = var.backend_principals
-    }
-
-    actions = ["sts:AssumeRole"]
-  }
-}
-
-resource "aws_iam_role" "backend_role" {
-  name               = "${var.project_prefix}-backend-role-${var.environment}"
-  assume_role_policy = data.aws_iam_policy_document.backend_assume_role.json
-
-  tags = {
-    Name = "${var.project_prefix}-backend-role"
-  }
-}
-
-data "aws_iam_policy_document" "backend_policy" {
-  statement {
-    sid     = "AllowDynamoDBForVideosTable"
-    effect  = "Allow"
-    actions = [
-      "dynamodb:PutItem",
-      "dynamodb:GetItem",
-      "dynamodb:Query",
-      "dynamodb:Scan",
-      "dynamodb:UpdateItem",
-      "dynamodb:DeleteItem"
-    ]
-    resources = [
-      aws_dynamodb_table.videos_table.arn,
-      "${aws_dynamodb_table.videos_table.arn}/*"
-    ]
-  }
-
-  statement {
-    sid     = "AllowS3AccessToVideosBucket"
-    effect  = "Allow"
-    actions = [
-      "s3:GetObject",
-      "s3:PutObject",
-      "s3:DeleteObject",
-      "s3:ListBucket"
-    ]
-    resources = [
-      aws_s3_bucket.videos_bucket.arn,
-      "${aws_s3_bucket.videos_bucket.arn}/*"
-    ]
-  }
-}
-
-resource "aws_iam_policy" "backend_policy" {
-  name   = "${var.project_prefix}-backend-policy-${var.environment}"
-  policy = data.aws_iam_policy_document.backend_policy.json
-}
-
-resource "aws_iam_role_policy_attachment" "attach_backend_policy" {
-  role       = aws_iam_role.backend_role.name
-  policy_arn = aws_iam_policy.backend_policy.arn
-}
-
-# Module outputs (so the env-level module can re-export)
-output "videos_bucket_name" {
-  value = aws_s3_bucket.videos_bucket.bucket
-}
-
-output "videos_table_name" {
-  value = aws_dynamodb_table.videos_table.name
-}
-
-output "backend_role_arn" {
-  value = aws_iam_role.backend_role.arn
-}
-
-# Terraform snippet (example) to add the lambda + API Gateway resource and integration.
-# Adapt and merge into module.lambda (or your lambda infra module). This is an example; you must
-# adjust variable names, module structure and S3 artifact upload process to match your repo.
-
-# 1) Add IAM inline policy (or managed policy) allowing DynamoDB Query on the videos table
+# IAM policy for list_videos Lambda
 resource "aws_iam_role_policy" "lambda_list_videos_policy" {
   name = "lms-infra-list-videos-policy"
-  role = aws_iam_role.lambda_exec.name # adapt to your lambda exec role resource name
+  role = aws_iam_role.lambda_exec.name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -157,67 +112,102 @@ resource "aws_iam_role_policy" "lambda_list_videos_policy" {
           "dynamodb:GetItem",
           "dynamodb:Scan"
         ]
-        Effect   = "Allow"
+        Effect = "Allow"
         Resource = [
-          "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/lotus-lms-videos",
-          "arn:aws:dynamodb:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:table/lotus-lms-videos/*"
+          aws_dynamodb_table.videos_table.arn,
+          "${aws_dynamodb_table.videos_table.arn}/*"
+        ]
+      },
+      {
+        Action = [
+          "s3:GetObject",
+          "s3:ListBucket"
+        ]
+        Effect = "Allow"
+        Resource = [
+          aws_s3_bucket.videos_bucket.arn,
+          "${aws_s3_bucket.videos_bucket.arn}/*"
         ]
       }
     ]
   })
 }
 
-# 2) Lambda function resource
+# Create placeholder zip if it doesn't exist (FIXED: prevents Lambda creation error)
+resource "null_resource" "create_placeholder_zip" {
+  provisioner "local-exec" {
+    command = <<-EOT
+      if ! aws s3 ls s3://${aws_s3_bucket.lambda_artifacts.bucket}/lambda/list_videos.zip 2>/dev/null; then
+        mkdir -p /tmp/lambda_placeholder
+        echo 'def handler(event, context): return {"statusCode": 200, "body": "placeholder"}' > /tmp/lambda_placeholder/handler.py
+        cd /tmp/lambda_placeholder && zip -r /tmp/list_videos_placeholder.zip . && cd -
+        aws s3 cp /tmp/list_videos_placeholder.zip s3://${aws_s3_bucket.lambda_artifacts.bucket}/lambda/list_videos.zip
+        rm -rf /tmp/lambda_placeholder /tmp/list_videos_placeholder.zip
+      fi
+    EOT
+  }
+
+  depends_on = [aws_s3_bucket.lambda_artifacts]
+}
+
+# Lambda function for list_videos
 resource "aws_lambda_function" "list_videos" {
   function_name = "lms-infra-list-videos"
   runtime       = "python3.10"
   handler       = "handler.handler"
-  role          = aws_iam_role.lambda_exec.arn  # ensure correct role with above policy attached
+  role          = aws_iam_role.lambda_exec.arn
 
-  # If you keep the same S3 bucket for artifacts:
   s3_bucket = aws_s3_bucket.lambda_artifacts.bucket
-  s3_key    = "lambda/list_videos.zip"     # upload the zip during your build
+  s3_key    = "lambda/list_videos.zip"
 
   memory_size = 256
   timeout     = 10
 
   environment {
     variables = {
-      VIDEOS_TABLE = "lotus-lms-videos"
+      VIDEOS_TABLE = aws_dynamodb_table.videos_table.name
     }
   }
 
   depends_on = [
-    aws_iam_role_policy.lambda_list_videos_policy
+    aws_iam_role_policy.lambda_list_videos_policy,
+    null_resource.create_placeholder_zip
   ]
+
+  lifecycle {
+    ignore_changes = [
+      # Ignore changes to source code hash since we update via GitHub Actions
+      source_code_hash
+    ]
+  }
 }
 
-# 3) API Gateway resource: attach under existing REST API
+# FIXED: Don't recreate existing /courses resource - reference it instead
+# Remove or comment out this block if aws_api_gateway_resource.courses already exists
+# resource "aws_api_gateway_resource" "courses_id" {
+#   rest_api_id = aws_api_gateway_rest_api.lms_api.id
+#   parent_id   = aws_api_gateway_rest_api.lms_api.root_resource_id
+#   path_part   = "courses"
+# }
 
-resource "aws_api_gateway_resource" "courses_id" {
-  rest_api_id = aws_api_gateway_rest_api.lms_api.id
-  parent_id   = aws_api_gateway_rest_api.lms_api.root_resource_id
-  path_part   = "courses"
-}
+# Use existing course_by_id resource (assumes it exists as /courses/{course_id})
+# If you don't have this, you need to reference your existing structure
 
-resource "aws_api_gateway_resource" "course_id_param" {
-  rest_api_id = aws_api_gateway_rest_api.lms_api.id
-  parent_id   = aws_api_gateway_resource.courses_id.id
-  path_part   = "{course_id}"
-}
-
+# API Gateway resource: /courses/{course_id}/videos
 resource "aws_api_gateway_resource" "course_videos" {
   rest_api_id = aws_api_gateway_rest_api.lms_api.id
-  parent_id   = aws_api_gateway_resource.course_id_param.id
+  # FIXED: Use existing course_by_id resource instead of creating new courses resource
+  parent_id   = aws_api_gateway_resource.course_by_id.id
   path_part   = "videos"
 }
 
-# 4) Method + Integration (GET /courses/{course_id}/videos)
+# GET method
 resource "aws_api_gateway_method" "get_course_videos" {
   rest_api_id   = aws_api_gateway_rest_api.lms_api.id
   resource_id   = aws_api_gateway_resource.course_videos.id
   http_method   = "GET"
   authorization = "NONE"
+  
   request_parameters = {
     "method.request.path.course_id" = true
   }
@@ -234,7 +224,7 @@ resource "aws_api_gateway_integration" "get_course_videos_integration" {
   timeout_milliseconds    = 29000
 }
 
-# 5) Response method for CORS (OPTIONS)
+# OPTIONS method for CORS
 resource "aws_api_gateway_method" "options_course_videos" {
   rest_api_id   = aws_api_gateway_rest_api.lms_api.id
   resource_id   = aws_api_gateway_resource.course_videos.id
@@ -279,12 +269,12 @@ resource "aws_api_gateway_integration_response" "options_course_videos_integrati
     "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Tenant-Id,Authorization'"
   }
 
-  response_templates = {
-    "application/json" = ""
-  }
+  depends_on = [
+    aws_api_gateway_integration.options_course_videos_integration
+  ]
 }
 
-# 6) Lambda permission so API Gateway can invoke
+# Lambda permission
 resource "aws_lambda_permission" "allow_api_gateway_list_videos" {
   statement_id  = "AllowAPIGatewayInvokeListVideos"
   action        = "lambda:InvokeFunction"
