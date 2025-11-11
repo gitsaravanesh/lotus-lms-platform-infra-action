@@ -24,3 +24,8 @@ output "videos_bucket_name" {
 output "videos_table_name" {
   value = module.lambda.videos_table_name
 }
+
+output "list_videos_endpoint" {
+  description = "List videos API endpoint"
+  value       = module.lambda.list_videos_endpoint
+}

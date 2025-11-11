@@ -20,3 +20,8 @@ output "videos_table_name" {
   description = "Name of the DynamoDB table for video metadata"
   value       = aws_dynamodb_table.videos_table.name
 }
+
+output "list_videos_endpoint" {
+  description = "API Gateway endpoint for list videos"
+  value       = "${aws_api_gateway_stage.dev.invoke_url}/courses/{course_id}/videos"
+}

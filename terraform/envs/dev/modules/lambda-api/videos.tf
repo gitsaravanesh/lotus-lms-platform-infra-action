@@ -278,3 +278,61 @@ resource "aws_lambda_permission" "allow_api_gateway_list_videos" {
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.lms_api.execution_arn}/*/*"
 }
+
+# Find your existing aws_api_gateway_deployment resource and update it
+# (it's likely already in your lambda module)
+
+resource "aws_api_gateway_deployment" "lms_api_deployment" {
+  rest_api_id = aws_api_gateway_rest_api.lms_api.id
+  description = "LMS API deployment for ${var.environment} environment"
+
+  # This triggers redeployment when any method/integration changes
+  triggers = {
+    # Include all your existing methods
+    redeployment = sha256(jsonencode([
+      aws_api_gateway_resource.courses.id,
+      aws_api_gateway_method.get_courses.id,
+      aws_api_gateway_integration.get_courses_integration.id,
+      
+      aws_api_gateway_resource.course_by_id.id,
+      aws_api_gateway_method.get_course_by_id.id,
+      aws_api_gateway_integration.get_course_by_id_integration.id,
+      
+      aws_api_gateway_resource.create_order.id,
+      aws_api_gateway_method.post_create_order.id,
+      aws_api_gateway_integration.create_order_integration.id,
+
+      # ADD THESE NEW LINES for list-videos:
+      aws_api_gateway_resource.course_videos.id,
+      aws_api_gateway_method.get_course_videos.id,
+      aws_api_gateway_integration.get_course_videos_integration.id,
+      aws_api_gateway_method.options_course_videos.id,
+      aws_api_gateway_integration.options_course_videos_integration.id,
+    ]))
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  depends_on = [
+    aws_api_gateway_integration.get_courses_integration,
+    aws_api_gateway_integration.get_course_by_id_integration,
+    aws_api_gateway_integration.create_order_integration,
+    # ADD THIS:
+    aws_api_gateway_integration.get_course_videos_integration,
+    aws_api_gateway_integration.options_course_videos_integration,
+  ]
+}
+
+# Your existing stage resource should already reference this deployment
+resource "aws_api_gateway_stage" "dev" {
+  deployment_id = aws_api_gateway_deployment.lms_api_deployment.id
+  rest_api_id   = aws_api_gateway_rest_api.lms_api.id
+  stage_name    = "dev"
+  description   = "Development stage for LMS API"
+
+  tags = {
+    Environment = var.environment
+  }
+}
