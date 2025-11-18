@@ -33,6 +33,17 @@ variable "courses_table_name" {
   default = "lms-courses"
 }
 
+variable "videos_table_name" {
+  type    = string
+  default = "lms-videos"
+}
+
+variable "transactions_table_name" {
+  type    = string
+  default = "lms-transactions"
+}
+
+
 variable "stage_name" {
   type    = string
   default = "dev"
