@@ -193,8 +193,8 @@ resource "aws_lambda_function" "list_videos" {
 resource "aws_api_gateway_resource" "course_videos" {
   rest_api_id = aws_api_gateway_rest_api.lms_api.id
   # FIXED: Use existing course_by_id resource instead of creating new courses resource
-  parent_id   = aws_api_gateway_resource.course_by_id.id
-  path_part   = "videos"
+  parent_id = aws_api_gateway_resource.course_by_id.id
+  path_part = "videos"
 }
 
 # GET method
@@ -203,7 +203,7 @@ resource "aws_api_gateway_method" "get_course_videos" {
   resource_id   = aws_api_gateway_resource.course_videos.id
   http_method   = "GET"
   authorization = "NONE"
-  
+
   request_parameters = {
     "method.request.path.course_id" = true
   }
