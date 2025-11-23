@@ -166,7 +166,7 @@ resource "aws_iam_role_policy" "lambda_policy" {
           "kms:DescribeKey"
         ]
         Resource = "arn:aws:kms:ap-south-1:944308403252:key/c1a60caa-ae0d-420d-9fd4-3ee2ece0bbc3"
-      }      
+      }
     ]
   })
 }
@@ -367,30 +367,30 @@ resource "aws_api_gateway_integration" "create_order_integration" {
 
 # ✅ MOCK INTEGRATIONS for OPTIONS (CORS)
 resource "aws_api_gateway_integration" "options_integration_courses" {
-  rest_api_id             = aws_api_gateway_rest_api.lms_api.id
-  resource_id             = aws_api_gateway_resource.courses.id
-  http_method             = aws_api_gateway_method.options_courses.http_method
-  type                    = "MOCK"
+  rest_api_id = aws_api_gateway_rest_api.lms_api.id
+  resource_id = aws_api_gateway_resource.courses.id
+  http_method = aws_api_gateway_method.options_courses.http_method
+  type        = "MOCK"
   request_templates = {
     "application/json" = "{\"statusCode\": 200}"
   }
 }
 
 resource "aws_api_gateway_integration" "options_integration_course_by_id" {
-  rest_api_id             = aws_api_gateway_rest_api.lms_api.id
-  resource_id             = aws_api_gateway_resource.course_by_id.id
-  http_method             = aws_api_gateway_method.options_course_by_id.http_method
-  type                    = "MOCK"
+  rest_api_id = aws_api_gateway_rest_api.lms_api.id
+  resource_id = aws_api_gateway_resource.course_by_id.id
+  http_method = aws_api_gateway_method.options_course_by_id.http_method
+  type        = "MOCK"
   request_templates = {
     "application/json" = "{\"statusCode\": 200}"
   }
 }
 
 resource "aws_api_gateway_integration" "options_integration_create_order" {
-  rest_api_id             = aws_api_gateway_rest_api.lms_api.id
-  resource_id             = aws_api_gateway_resource.create_order.id
-  http_method             = aws_api_gateway_method.options_create_order.http_method
-  type                    = "MOCK"
+  rest_api_id = aws_api_gateway_rest_api.lms_api.id
+  resource_id = aws_api_gateway_resource.create_order.id
+  http_method = aws_api_gateway_method.options_create_order.http_method
+  type        = "MOCK"
   request_templates = {
     "application/json" = "{\"statusCode\": 200}"
   }
@@ -409,26 +409,26 @@ locals {
 
 # Method responses for OPTIONS
 resource "aws_api_gateway_method_response" "options_courses" {
-  rest_api_id = aws_api_gateway_rest_api.lms_api.id
-  resource_id = aws_api_gateway_resource.courses.id
-  http_method = aws_api_gateway_method.options_courses.http_method
-  status_code = "200"
+  rest_api_id         = aws_api_gateway_rest_api.lms_api.id
+  resource_id         = aws_api_gateway_resource.courses.id
+  http_method         = aws_api_gateway_method.options_courses.http_method
+  status_code         = "200"
   response_parameters = local.cors_headers
 }
 
 resource "aws_api_gateway_method_response" "options_course_by_id" {
-  rest_api_id = aws_api_gateway_rest_api.lms_api.id
-  resource_id = aws_api_gateway_resource.course_by_id.id
-  http_method = aws_api_gateway_method.options_course_by_id.http_method
-  status_code = "200"
+  rest_api_id         = aws_api_gateway_rest_api.lms_api.id
+  resource_id         = aws_api_gateway_resource.course_by_id.id
+  http_method         = aws_api_gateway_method.options_course_by_id.http_method
+  status_code         = "200"
   response_parameters = local.cors_headers
 }
 
 resource "aws_api_gateway_method_response" "options_create_order" {
-  rest_api_id = aws_api_gateway_rest_api.lms_api.id
-  resource_id = aws_api_gateway_resource.create_order.id
-  http_method = aws_api_gateway_method.options_create_order.http_method
-  status_code = "200"
+  rest_api_id         = aws_api_gateway_rest_api.lms_api.id
+  resource_id         = aws_api_gateway_resource.create_order.id
+  http_method         = aws_api_gateway_method.options_create_order.http_method
+  status_code         = "200"
   response_parameters = local.cors_headers
 }
 
@@ -503,7 +503,15 @@ resource "aws_api_gateway_deployment" "lms_api_deployment" {
       aws_api_gateway_method.get_course_videos.id,
       aws_api_gateway_integration.get_course_videos_integration.id,
       aws_api_gateway_method.options_course_videos.id,
-      aws_api_gateway_integration.options_course_videos_integration.id, 
+      aws_api_gateway_integration.options_course_videos_integration.id,
+
+      # ADD THESE NEW LINES for update-transaction:
+      aws_api_gateway_resource.transactions.id,
+      aws_api_gateway_resource.transaction_by_id.id,
+      aws_api_gateway_method.put_transaction.id,
+      aws_api_gateway_integration.put_transaction_integration.id,
+      aws_api_gateway_method.options_transaction_by_id.id,
+      aws_api_gateway_integration.options_transaction_by_id_integration.id,
       timestamp()
     ]))
   }
@@ -516,7 +524,9 @@ resource "aws_api_gateway_deployment" "lms_api_deployment" {
     aws_api_gateway_integration.options_integration_course_by_id,
     aws_api_gateway_integration.options_integration_create_order,
     aws_api_gateway_integration.get_course_videos_integration,
-    aws_api_gateway_integration.options_course_videos_integration
+    aws_api_gateway_integration.options_course_videos_integration,
+    aws_api_gateway_integration.put_transaction_integration,
+    aws_api_gateway_integration.options_transaction_by_id_integration
   ]
 }
 
