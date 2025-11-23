@@ -226,6 +226,37 @@ resource "aws_lambda_function" "create_order" {
   ]
 }
 
+# Lambda function for update_transaction
+resource "aws_lambda_function" "update_transaction" {
+  function_name = "lms-infra-update-transaction"
+  runtime       = "python3.10"
+  handler       = "update_transaction.lambda_handler"  # ✅ CHANGED FROM "update_transaction.handler"
+  role          = aws_iam_role.lambda_exec.arn
+
+  s3_bucket = aws_s3_bucket.lambda_artifacts.bucket
+  s3_key    = "lambda/update_transaction.zip"
+
+  memory_size = 256
+  timeout     = 10
+
+  environment {
+    variables = {
+      TRANSACTIONS_TABLE = aws_dynamodb_table.transactions.name
+    }
+  }
+
+  depends_on = [
+    aws_iam_role_policy.lambda_update_transaction_policy,
+    null_resource.create_update_transaction_placeholder_zip
+  ]
+
+  lifecycle {
+    ignore_changes = [
+      source_code_hash
+    ]
+  }
+}
+
 #############################################
 # API GATEWAY REST API
 #############################################
