@@ -227,7 +227,7 @@ resource "aws_lambda_function" "create_order" {
 }
 
 # Lambda function for update_transaction
-resource "aws_lambda_function" "update_transaction" {
+resource "aws_lambda_function" "update_transactions" {
   function_name = "lms-infra-update-transaction"
   runtime       = "python3.10"
   handler       = "update_transaction.lambda_handler"  # ✅ CHANGED FROM "update_transaction.handler"
