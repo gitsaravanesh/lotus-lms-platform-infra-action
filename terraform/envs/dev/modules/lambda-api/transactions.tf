@@ -39,38 +39,6 @@ resource "null_resource" "create_update_transaction_placeholder_zip" {
   depends_on = [aws_s3_bucket.lambda_artifacts]
 }
 
-# Lambda function for update_transaction
-resource "aws_lambda_function" "update_transaction" {
-  function_name = "lms-infra-update-transaction"
-  runtime       = "python3.10"
-  handler       = "update_transaction.handler"
-  role          = aws_iam_role.lambda_exec.arn
-
-  s3_bucket = aws_s3_bucket.lambda_artifacts.bucket
-  s3_key    = "lambda/update_transaction.zip"
-
-  memory_size = 256
-  timeout     = 10
-
-  environment {
-    variables = {
-      TRANSACTIONS_TABLE = aws_dynamodb_table.transactions.name
-    }
-  }
-
-  depends_on = [
-    aws_iam_role_policy.lambda_update_transaction_policy,
-    null_resource.create_update_transaction_placeholder_zip
-  ]
-
-  lifecycle {
-    ignore_changes = [
-      # Ignore changes to source code hash since we update via GitHub Actions
-      source_code_hash
-    ]
-  }
-}
-
 # API Gateway resource: /transactions
 resource "aws_api_gateway_resource" "transactions" {
   rest_api_id = aws_api_gateway_rest_api.lms_api.id
@@ -104,7 +72,7 @@ resource "aws_api_gateway_integration" "put_transaction_integration" {
 
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.update_transaction.invoke_arn
+  uri                     = aws_lambda_function.update_transactions.invoke_arn
   timeout_milliseconds    = 29000
 }
 
@@ -162,7 +130,7 @@ resource "aws_api_gateway_integration_response" "options_transaction_by_id_integ
 resource "aws_lambda_permission" "allow_api_gateway_update_transaction" {
   statement_id  = "AllowAPIGatewayInvokeUpdateTransaction"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.update_transaction.function_name
+  function_name = aws_lambda_function.update_transactions.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.lms_api.execution_arn}/*/*"
 }
