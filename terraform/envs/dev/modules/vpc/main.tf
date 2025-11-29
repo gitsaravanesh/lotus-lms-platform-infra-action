@@ -10,7 +10,7 @@ terraform {
 }
 
 provider "aws" {
-  region     = var.aws_region
+  region = var.aws_region
 }
 
 # VPC
@@ -19,7 +19,7 @@ resource "aws_vpc" "lotus_lms_platform_vpc" {
   enable_dns_support   = true
   enable_dns_hostnames = true
   tags = {
-    Name = "lotus-lms-platform-vpc"
+    Name    = "lotus-lms-platform-vpc"
     Project = "lotus-lms-platform"
   }
 }

@@ -14,9 +14,9 @@ resource "aws_cognito_user_pool" "this" {
   # ✅ Use Email Link Verification (instead of OTP)
   ##########################################
   verification_message_template {
-    default_email_option   = "CONFIRM_WITH_LINK"
-    email_subject          = "Verify your Lotus LMS account"
-    email_message_by_link  = "Hi,<br><br>Click the link below to verify your account:<br><br>{##Verify Email##}<br><br>Thanks,<br>Lotus LMS Team"
+    default_email_option  = "CONFIRM_WITH_LINK"
+    email_subject         = "Verify your Lotus LMS account"
+    email_message_by_link = "Hi,<br><br>Click the link below to verify your account:<br><br>{##Verify Email##}<br><br>Thanks,<br>Lotus LMS Team"
   }
 
   # Add alias attributes to allow login with either username or email
@@ -49,7 +49,7 @@ resource "aws_cognito_user_pool" "this" {
     name                     = "email"
     attribute_data_type      = "String"
     mutable                  = true
-    required                 = true  # Make email required
+    required                 = true # Make email required
     developer_only_attribute = false
 
     string_attribute_constraints {
@@ -68,6 +68,19 @@ resource "aws_cognito_user_pool" "this" {
     string_attribute_constraints {
       min_length = "1"
       max_length = "100"
+    }
+  }
+
+  schema {
+    name                     = "username"
+    attribute_data_type      = "String"
+    mutable                  = true
+    required                 = false
+    developer_only_attribute = false
+
+    string_attribute_constraints {
+      min_length = "3"
+      max_length = "50"
     }
   }
 
@@ -93,15 +106,16 @@ resource "aws_cognito_user_pool_domain" "this" {
 ##########################################
 
 resource "aws_cognito_identity_provider" "google" {
-  count          = length(var.enabled_identity_providers) > 0 && contains(var.enabled_identity_providers, "Google") ? 1 : 0
-  provider_name  = "Google"
-  provider_type  = "Google"
-  user_pool_id   = aws_cognito_user_pool.this.id
+  count         = length(var.enabled_identity_providers) > 0 && contains(var.enabled_identity_providers, "Google") ? 1 : 0
+  provider_name = "Google"
+  provider_type = "Google"
+  user_pool_id  = aws_cognito_user_pool.this.id
 
   attribute_mapping = {
-    email    = "email"
-    username = "sub"
-    name     = "name"
+    email             = "email"
+    username          = "sub"
+    name              = "name"
+    "custom:username" = "email"
   }
 
   provider_details = {
@@ -145,9 +159,9 @@ resource "aws_cognito_user_pool_client" "this" {
   ##########################################
   # ✅ Keep "code" flow for OAuth 2.0
   ##########################################
-  allowed_oauth_flows           = ["code"]
+  allowed_oauth_flows                  = ["code"]
   allowed_oauth_flows_user_pool_client = true
-  allowed_oauth_scopes          = ["openid", "email", "profile"]
+  allowed_oauth_scopes                 = ["openid", "email", "profile"]
 
   callback_urls = var.callback_urls
   logout_urls   = var.logout_urls
@@ -159,12 +173,14 @@ resource "aws_cognito_user_pool_client" "this" {
   ##########################################
   read_attributes = [
     "email",
-    "custom:interest"
+    "custom:interest",
+    "custom:username"
   ]
 
   write_attributes = [
     "email",
-    "custom:interest"
+    "custom:interest",
+    "custom:username"
   ]
 
   depends_on = [null_resource.wait_for_idp]

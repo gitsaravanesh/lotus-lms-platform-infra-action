@@ -1,13 +1,13 @@
 # EC2 Key Pair Module
 module "ec2_key" {
-  source = "./modules/ec2_key"
+  source   = "./modules/ec2_key"
   key_name = "lotus-lms-platform-key"
 }
 
 # VPC Module
 module "vpc" {
-  source         = "./modules/vpc"
-  aws_region     = var.aws_region
+  source     = "./modules/vpc"
+  aws_region = var.aws_region
 }
 
 # EC2 Module
@@ -23,7 +23,7 @@ module "cognito" {
   source = "./modules/cognito"
 
   user_pool_name        = "lms-userpool-dev"
-  cognito_domain_prefix = "lms-auth-dev-sarav"   # must be globally unique
+  cognito_domain_prefix = "lms-auth-dev-sarav" # must be globally unique
 
   callback_urls = [
     "https://dodyqytcfhwoe.cloudfront.net/",
@@ -60,8 +60,8 @@ module "cloudfront" {
 }
 
 module "lambda" {
-  source      = "./modules/lambda-api"
-  project_prefix = var.project_prefix
-  environment    = var.environment
+  source             = "./modules/lambda-api"
+  project_prefix     = var.project_prefix
+  environment        = var.environment
   backend_principals = var.backend_principals
 }
