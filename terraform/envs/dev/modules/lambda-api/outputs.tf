@@ -25,3 +25,13 @@ output "list_videos_endpoint" {
   description = "API Gateway endpoint for list videos"
   value       = "${aws_api_gateway_stage.dev.invoke_url}/courses/{course_id}/videos"
 }
+
+output "users_table_name" {
+  description = "Name of the DynamoDB table for user data"
+  value       = aws_dynamodb_table.users.name
+}
+
+output "users_table_arn" {
+  description = "ARN of the DynamoDB table for user data"
+  value       = aws_dynamodb_table.users.arn
+}
