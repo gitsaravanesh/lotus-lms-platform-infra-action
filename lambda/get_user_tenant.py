@@ -3,11 +3,6 @@ import os
 import boto3
 from botocore.exceptions import ClientError
 
-# Initialize DynamoDB client
-dynamodb = boto3.resource('dynamodb')
-table_name = os.environ.get('USER_TENANT_MAPPING_TABLE')
-table = dynamodb.Table(table_name)
-
 def lambda_handler(event, context):
     """
     Lambda handler for getting user-tenant mapping information.
@@ -32,16 +27,35 @@ def lambda_handler(event, context):
     }
     
     try:
+        # Initialize DynamoDB client
+        dynamodb = boto3.resource('dynamodb')
+        table_name = os.environ.get('USER_TENANT_MAPPING_TABLE')
+        
+        if not table_name:
+            print("ERROR: USER_TENANT_MAPPING_TABLE environment variable not set")
+            return {
+                'statusCode': 500,
+                'headers': cors_headers,
+                'body': json.dumps({
+                    'error': 'Internal server error',
+                    'message': 'Database configuration error'
+                })
+            }
+        
+        table = dynamodb.Table(table_name)
+        
         # Extract user_id from query parameters
         user_id = None
         
         # Check query string parameters
-        if event.get('queryStringParameters'):
-            user_id = event['queryStringParameters'].get('user_id')
+        query_params = event.get('queryStringParameters')
+        if query_params:
+            user_id = query_params.get('user_id')
         
         # Check headers as fallback
-        if not user_id and event.get('headers'):
-            user_id = event['headers'].get('user_id') or event['headers'].get('User-Id')
+        headers = event.get('headers')
+        if not user_id and headers:
+            user_id = headers.get('user_id') or headers.get('User-Id')
         
         # Validate user_id is provided
         if not user_id:
