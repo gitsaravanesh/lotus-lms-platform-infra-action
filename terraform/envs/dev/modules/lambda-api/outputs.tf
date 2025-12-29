@@ -35,3 +35,18 @@ output "users_table_arn" {
   description = "ARN of the DynamoDB table for user data"
   value       = aws_dynamodb_table.users.arn
 }
+
+output "user_tenant_mapping_table_name" {
+  description = "Name of the DynamoDB table for user-tenant mapping"
+  value       = aws_dynamodb_table.user_tenant_mapping.name
+}
+
+output "user_tenant_mapping_table_arn" {
+  description = "ARN of the DynamoDB table for user-tenant mapping"
+  value       = aws_dynamodb_table.user_tenant_mapping.arn
+}
+
+output "get_user_tenant_endpoint" {
+  description = "API Gateway endpoint for get user tenant mapping"
+  value       = "${aws_api_gateway_stage.dev.invoke_url}/user/tenant"
+}
