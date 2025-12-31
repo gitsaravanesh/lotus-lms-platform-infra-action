@@ -45,6 +45,17 @@ def lambda_handler(event, context):
         username = user_attributes.get('custom:username', email)  # Use custom username or fall back to email
         full_name = user_attributes.get('name', '')
         
+        # Validate required fields
+        if not user_id:
+            print("ERROR: user_id (sub) is missing from user attributes")
+            raise Exception("User ID is required")
+        if not email:
+            print("ERROR: email is missing from user attributes")
+            raise Exception("Email is required")
+        if not username:
+            print("ERROR: username could not be determined (both custom:username and email are missing)")
+            raise Exception("Username is required")
+        
         # Create timestamp
         created_at = datetime.utcnow().isoformat()
         
