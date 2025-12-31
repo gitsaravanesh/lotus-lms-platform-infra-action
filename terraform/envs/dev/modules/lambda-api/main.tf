@@ -512,6 +512,14 @@ resource "aws_api_gateway_deployment" "lms_api_deployment" {
       aws_api_gateway_integration.put_transaction_integration.id,
       aws_api_gateway_method.options_transaction_by_id.id,
       aws_api_gateway_integration.options_transaction_by_id_integration.id,
+
+      # ADD THESE NEW LINES for get-user-tenant:
+      aws_api_gateway_resource.user.id,
+      aws_api_gateway_resource.user_tenant.id,
+      aws_api_gateway_method.get_user_tenant.id,
+      aws_api_gateway_integration.get_user_tenant_integration.id,
+      aws_api_gateway_method.options_user_tenant.id,
+      aws_api_gateway_integration.options_user_tenant_integration.id,
       timestamp()
     ]))
   }
@@ -526,7 +534,9 @@ resource "aws_api_gateway_deployment" "lms_api_deployment" {
     aws_api_gateway_integration.get_course_videos_integration,
     aws_api_gateway_integration.options_course_videos_integration,
     aws_api_gateway_integration.put_transaction_integration,
-    aws_api_gateway_integration.options_transaction_by_id_integration
+    aws_api_gateway_integration.options_transaction_by_id_integration,
+    aws_api_gateway_integration.get_user_tenant_integration,
+    aws_api_gateway_integration.options_user_tenant_integration
   ]
 }
 
