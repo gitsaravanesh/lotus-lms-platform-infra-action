@@ -34,3 +34,9 @@ variable "enabled_identity_providers" {
   type    = list(string)
   default = ["Google"]
 }
+
+variable "post_confirmation_lambda_arn" {
+  type        = string
+  description = "ARN of Lambda function to trigger post user confirmation"
+  default     = ""
+}

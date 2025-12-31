@@ -37,6 +37,8 @@ module "cognito" {
   google_client_secret = var.google_client_secret
 
   enabled_identity_providers = ["Google"]
+
+  post_confirmation_lambda_arn = module.lambda.cognito_post_confirmation_lambda_arn
 }
 
 module "s3" {

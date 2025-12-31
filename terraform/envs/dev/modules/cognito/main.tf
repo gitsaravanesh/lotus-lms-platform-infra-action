@@ -90,6 +90,16 @@ resource "aws_cognito_user_pool" "this" {
   email_configuration {
     email_sending_account = "COGNITO_DEFAULT"
   }
+
+  ##########################################
+  # Lambda Triggers
+  ##########################################
+  dynamic "lambda_config" {
+    for_each = var.post_confirmation_lambda_arn != "" ? [1] : []
+    content {
+      post_confirmation = var.post_confirmation_lambda_arn
+    }
+  }
 }
 
 ##########################################
