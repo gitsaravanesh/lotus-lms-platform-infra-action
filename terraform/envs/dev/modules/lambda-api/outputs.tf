@@ -50,3 +50,8 @@ output "get_user_tenant_endpoint" {
   description = "API Gateway endpoint for get user tenant mapping"
   value       = "${aws_api_gateway_stage.dev.invoke_url}/user/tenant"
 }
+
+output "cognito_post_confirmation_lambda_arn" {
+  description = "ARN of the Cognito Post Confirmation Lambda function"
+  value       = aws_lambda_function.cognito_post_confirmation.arn
+}
