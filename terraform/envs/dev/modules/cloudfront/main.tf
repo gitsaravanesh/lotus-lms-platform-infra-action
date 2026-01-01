@@ -27,15 +27,35 @@ resource "aws_cloudfront_distribution" "frontend" {
   default_cache_behavior {
     target_origin_id       = "s3-static-site-origin"
     viewer_protocol_policy = "redirect-to-https"
-    allowed_methods        = ["GET", "HEAD"]
+    allowed_methods        = ["GET", "HEAD", "OPTIONS"]  # Added OPTIONS for CORS preflight
     cached_methods         = ["GET", "HEAD"]
 
     forwarded_values {
-      query_string = false
+      query_string = true  # Changed from false - required for OAuth redirects
       cookies {
         forward = "none"
       }
     }
+
+    min_ttl     = 0
+    default_ttl = 86400      # 24 hours
+    max_ttl     = 31536000   # 1 year
+  }
+
+  # Handle 403 Forbidden errors - return index.html for client-side routing
+  custom_error_response {
+    error_code            = 403
+    response_code         = 200
+    response_page_path    = "/index.html"
+    error_caching_min_ttl = 10
+  }
+
+  # Handle 404 Not Found errors - return index.html for client-side routing
+  custom_error_response {
+    error_code            = 404
+    response_code         = 200
+    response_page_path    = "/index.html"
+    error_caching_min_ttl = 10
   }
 
   price_class = "PriceClass_100"
