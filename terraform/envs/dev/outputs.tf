@@ -34,3 +34,16 @@ output "users_table_name" {
   description = "Name of the users DynamoDB table"
   value       = module.lambda.users_table_name
 }
+
+# CloudFront outputs for frontend deployment
+# These outputs should be used in GitHub Actions secrets for the frontend deployment workflow
+# Example: terraform output cloudfront_distribution_id
+output "cloudfront_distribution_id" {
+  description = "CloudFront distribution ID for cache invalidation"
+  value       = module.cloudfront.cloudfront_distribution_id
+}
+
+output "cloudfront_distribution_domain" {
+  description = "CloudFront domain name (public HTTPS URL)"
+  value       = module.cloudfront.cloudfront_distribution_domain
+}
