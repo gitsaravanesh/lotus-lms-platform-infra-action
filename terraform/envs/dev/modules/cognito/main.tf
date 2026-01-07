@@ -183,6 +183,11 @@ resource "aws_cognito_user_pool_client" "this" {
   ##########################################
   read_attributes = [
     "email",
+    "name",
+    "given_name",
+    "family_name",
+    "preferred_username",
+    "picture",
     "custom:interest",
     "custom:username"
   ]
