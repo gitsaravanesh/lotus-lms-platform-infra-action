@@ -5,22 +5,17 @@
 resource "aws_cognito_user_pool" "this" {
   name = var.user_pool_name
 
-  # Verify email but require username
   auto_verified_attributes = ["email"]
-  # Remove username_attributes to make username mandatory
-  # username_attributes      = ["email"]  
+  alias_attributes         = ["email"]
 
   ##########################################
-  # ✅ Use Email Link Verification (instead of OTP)
+  # Email Verification (Link)
   ##########################################
   verification_message_template {
     default_email_option  = "CONFIRM_WITH_LINK"
     email_subject         = "Verify your Lotus LMS account"
     email_message_by_link = "Hi,<br><br>Click the link below to verify your account:<br><br>{##Verify Email##}<br><br>Thanks,<br>Lotus LMS Team"
   }
-
-  # Add alias attributes to allow login with either username or email
-  alias_attributes = ["email"]
 
   ##########################################
   # Password Policy
@@ -34,7 +29,7 @@ resource "aws_cognito_user_pool" "this" {
   }
 
   ##########################################
-  # Allow users to self-register
+  # Allow self sign-up
   ##########################################
   admin_create_user_config {
     allow_admin_create_user_only = false
@@ -43,14 +38,15 @@ resource "aws_cognito_user_pool" "this" {
   mfa_configuration = "OFF"
 
   ##########################################
-  # Schema Configuration
+  # Schema
   ##########################################
+
+  # Email (standard)
   schema {
-    name                     = "email"
-    attribute_data_type      = "String"
-    mutable                  = true
-    required                 = true # Make email required
-    developer_only_attribute = false
+    name                = "email"
+    attribute_data_type = "String"
+    mutable             = true
+    required            = true
 
     string_attribute_constraints {
       min_length = "3"
@@ -58,12 +54,12 @@ resource "aws_cognito_user_pool" "this" {
     }
   }
 
+  # Custom: interest
   schema {
-    name                     = "interest"
-    attribute_data_type      = "String"
-    mutable                  = true
-    required                 = false
-    developer_only_attribute = false
+    name                = "interest"
+    attribute_data_type = "String"
+    mutable             = true
+    required            = false
 
     string_attribute_constraints {
       min_length = "1"
@@ -71,12 +67,12 @@ resource "aws_cognito_user_pool" "this" {
     }
   }
 
+  # ✅ Custom: students_username (SAFE)
   schema {
-    name                     = "username"
-    attribute_data_type      = "String"
-    mutable                  = true
-    required                 = false
-    developer_only_attribute = false
+    name                = "students_username"
+    attribute_data_type = "String"
+    mutable             = true
+    required            = false
 
     string_attribute_constraints {
       min_length = "3"
@@ -85,14 +81,14 @@ resource "aws_cognito_user_pool" "this" {
   }
 
   ##########################################
-  # 📧 Email Configuration (using Cognito’s default email service)
+  # Email Configuration
   ##########################################
   email_configuration {
     email_sending_account = "COGNITO_DEFAULT"
   }
 
   ##########################################
-  # Lambda Triggers
+  # Lambda Triggers (optional)
   ##########################################
   dynamic "lambda_config" {
     for_each = var.post_confirmation_lambda_arn != "" ? [1] : []
@@ -112,39 +108,27 @@ resource "aws_cognito_user_pool_domain" "this" {
 }
 
 ##########################################
-# Identity Provider (Google)
+# Identity Provider - Google
 ##########################################
 
 resource "aws_cognito_identity_provider" "google" {
-  count         = length(var.enabled_identity_providers) > 0 && contains(var.enabled_identity_providers, "Google") ? 1 : 0
   provider_name = "Google"
   provider_type = "Google"
   user_pool_id  = aws_cognito_user_pool.this.id
 
   attribute_mapping = {
-    email             = "email"
-    username          = "sub"
-    name              = "name"
-    "custom:username" = "email"
+    email                      = "email"
+    username                   = "sub"
+    name                       = "name"
+    given_name                 = "given_name"
+    family_name                = "family_name"
+    "custom:students_username" = "email"
   }
 
   provider_details = {
     client_id        = var.google_client_id
     client_secret    = var.google_client_secret
     authorize_scopes = "openid email profile"
-  }
-}
-
-##########################################
-# Wait for IDP Setup
-##########################################
-
-resource "null_resource" "wait_for_idp" {
-  count      = aws_cognito_identity_provider.google[0] != null ? 1 : 0
-  depends_on = [aws_cognito_identity_provider.google]
-
-  provisioner "local-exec" {
-    command = "sleep 10"
   }
 }
 
@@ -156,18 +140,15 @@ resource "aws_cognito_user_pool_client" "this" {
   name         = "${var.user_pool_name}-client"
   user_pool_id = aws_cognito_user_pool.this.id
 
-  explicit_auth_flows = [
-    "ALLOW_USER_PASSWORD_AUTH",
-    "ALLOW_USER_SRP_AUTH",
-    "ALLOW_REFRESH_TOKEN_AUTH"
+  generate_secret = false
+
+  supported_identity_providers = [
+    "COGNITO",
+    "Google"
   ]
 
-  prevent_user_existence_errors = "ENABLED"
-  generate_secret               = false
-  supported_identity_providers  = ["COGNITO", "Google"]
-
   ##########################################
-  # ✅ Keep "code" flow for OAuth 2.0
+  # OAuth Configuration
   ##########################################
   allowed_oauth_flows                  = ["code"]
   allowed_oauth_flows_user_pool_client = true
@@ -176,27 +157,50 @@ resource "aws_cognito_user_pool_client" "this" {
   callback_urls = var.callback_urls
   logout_urls   = var.logout_urls
 
+  ##########################################
+  # Explicit Auth Flows
+  ##########################################
+  explicit_auth_flows = [
+    "ALLOW_USER_PASSWORD_AUTH",
+    "ALLOW_USER_SRP_AUTH",
+    "ALLOW_REFRESH_TOKEN_AUTH"
+  ]
+
+  prevent_user_existence_errors = "ENABLED"
+
   refresh_token_validity = 30
 
   ##########################################
-  # 🧠 Enable Read/Write Access to Custom Attribute
+  # Attribute Permissions (CRITICAL)
   ##########################################
   read_attributes = [
     "email",
+
+    # Required for profile scope
     "name",
     "given_name",
     "family_name",
     "preferred_username",
     "picture",
+
     "custom:interest",
-    "custom:username"
+    "custom:students_username"
   ]
 
   write_attributes = [
     "email",
     "custom:interest",
-    "custom:username"
+    "custom:students_username"
   ]
 
-  depends_on = [null_resource.wait_for_idp]
+  ##########################################
+  # Safety
+  ##########################################
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  depends_on = [
+    aws_cognito_identity_provider.google
+  ]
 }
