@@ -67,9 +67,9 @@ resource "aws_cognito_user_pool" "this" {
     }
   }
 
-  # ✅ Custom: students_username (SAFE)
+  # ✅ Custom: student_username (SAFE)
   schema {
-    name                = "students_username"
+    name                = "student_username"
     attribute_data_type = "String"
     mutable             = true
     required            = false
@@ -122,7 +122,7 @@ resource "aws_cognito_identity_provider" "google" {
     name                       = "name"
     given_name                 = "given_name"
     family_name                = "family_name"
-    "custom:students_username" = "email"
+    "custom:student_username"  = "email"
   }
 
   provider_details = {
@@ -184,13 +184,13 @@ resource "aws_cognito_user_pool_client" "this" {
     "picture",
 
     "custom:interest",
-    "custom:students_username"
+    "custom:student_username"
   ]
 
   write_attributes = [
     "email",
     "custom:interest",
-    "custom:students_username"
+    "custom:student_username"
   ]
 
   ##########################################
