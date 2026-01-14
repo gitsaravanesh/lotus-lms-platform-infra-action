@@ -46,4 +46,8 @@ resource "aws_cognito_user_pool_client" "oauth" {
     "COGNITO",
     aws_cognito_identity_provider.google.provider_name
   ]
+  
+  depends_on = [
+    aws_cognito_identity_provider.google
+  ]
 }
