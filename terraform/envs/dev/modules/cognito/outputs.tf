@@ -9,7 +9,7 @@ output "user_pool_arn" {
 
 
 output "user_pool_client_id" {
-  value = aws_cognito_user_pool_client.this.id
+  value = aws_cognito_user_pool_client.oauth.id
 }
 
 
