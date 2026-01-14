@@ -1,15 +1,18 @@
 output "user_pool_id" {
-  value = aws_cognito_user_pool.main.id
+  value = aws_cognito_user_pool.this.id
 }
 
-output "direct_client_id" {
-  value = aws_cognito_user_pool_client.direct_auth.id
+
+output "user_pool_arn" {
+  value = aws_cognito_user_pool.this.arn
 }
 
-output "oauth_client_id" {
-  value = aws_cognito_user_pool_client.oauth.id
+
+output "user_pool_client_id" {
+  value = aws_cognito_user_pool_client.this.id
 }
+
 
 output "cognito_domain" {
-  value = aws_cognito_user_pool_domain.main.domain
+  value = aws_cognito_user_pool_domain.this.domain
 }
