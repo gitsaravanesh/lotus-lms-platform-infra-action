@@ -40,3 +40,8 @@ variable "post_confirmation_lambda_arn" {
   description = "ARN of Lambda function to trigger post user confirmation"
   default     = ""
 }
+
+variable "project_name" {
+  type = string
+  default = "lms"
+}
