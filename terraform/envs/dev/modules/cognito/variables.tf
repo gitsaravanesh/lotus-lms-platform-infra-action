@@ -1,42 +1,27 @@
-variable "user_pool_name" {
-  type = string
+variable "aws_region" {
+  type        = string
+  description = "AWS region"
 }
 
-
-variable "cognito_domain_prefix" {
-  type = string
+variable "project_name" {
+  type        = string
+  description = "Project name prefix"
 }
-
 
 variable "callback_urls" {
-  type = list(string)
+  type        = list(string)
+  description = "OAuth callback URLs"
 }
-
 
 variable "logout_urls" {
-  type = list(string)
+  type        = list(string)
+  description = "OAuth logout URLs"
 }
-
 
 variable "google_client_id" {
-  type      = string
-  sensitive = true
+  type        = string
 }
-
 
 variable "google_client_secret" {
-  type      = string
-  sensitive = true
-}
-
-
-variable "enabled_identity_providers" {
-  type    = list(string)
-  default = ["Google"]
-}
-
-variable "post_confirmation_lambda_arn" {
   type        = string
-  description = "ARN of Lambda function to trigger post user confirmation"
-  default     = ""
 }
