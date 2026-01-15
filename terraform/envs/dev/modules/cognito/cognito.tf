@@ -12,9 +12,9 @@ resource "aws_cognito_user_pool" "this" {
     required            = true
     mutable             = false
   }
-  
+
   schema {
-    name                = "custom:student_username"
+    name                = "student_username"
     attribute_data_type = "String"
     required            = false
     mutable             = true
